@@ -7,11 +7,17 @@ from skimage import io, color
 import time
 import logging
 
-# Cau hinh logging
-chuoi = input("Nhập vào tên file log: ")
-chuoi = chuoi + '.txt'
-logging.basicConfig(filename = chuoi, level=logging.INFO, 
-                    format='%(asctime)s - %(levelname)s - %(message)s')
+def kiemThuChayNhieuLan(i, name):
+        temp_chuoi = f"{name}{i}"
+        temp_chuoi = temp_chuoi + '.txt'
+        logging.basicConfig(filename = temp_chuoi, level=logging.INFO, 
+                            format='%(asctime)s - %(levelname)s - %(message)s')
+        # Duong dan toi anh cua ban
+        image_path = "apple3_60x60.jpg"  # Thay bang duong dan anh cua ban
+        """ image_path = "apple4_98x100.jpg"  # Thay bang duong dan anh cua ban """
+        normalized_cuts(image_path, k=3)
+        
+
 
 # 1. Tinh ma tran trong so
 def compute_weight_matrix(image, sigma_i=0.1, sigma_x=10):
@@ -130,8 +136,5 @@ def normalized_cuts(image_path, k):
     display_segmentation(image, labels, k)
 
 # 7. Chay thu nghiem
-if __name__ == "__main__":
-    # Duong dan toi anh cua ban
-    """ image_path = "apple3_60x60.jpg"  # Thay bang duong dan anh cua ban """
-    image_path = "apple4_98x100.jpg"  # Thay bang duong dan anh cua ban
-    normalized_cuts(image_path, k=3)  # Phan vung thanh 3 nhom
+""" if __name__ == "__main__": """
+

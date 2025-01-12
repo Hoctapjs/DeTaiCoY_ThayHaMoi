@@ -1,6 +1,11 @@
 import matplotlib.pyplot as plt
 import re
 
+# hàm truyền vào số lượng cần chạy(5) + truyền tên file log chung (logapple3ver)
+    # vòng lặp truyền tên chuẩn vào, cộng chuỗi i từ tên chuẩn
+        # gọi file code_chuan_log (truyền tham số vào là tên chuẫn đã cộng số thứ tự)
+
+
 # Hàm đọc log và trích xuất thời gian
 def extract_times_from_log(log_file):
     times = []
