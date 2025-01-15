@@ -1,4 +1,5 @@
-import ncut_GPU as codechuan  # Import file chứa các hàm cần sử dụng
+import code_caitien_gpu_histogram as codechuan  # Import file chứa các hàm cần sử dụng
+""" import ncut_GPU as codechuan  # Import file chứa các hàm cần sử dụng """
 
 def kiemThuChayNhieuLanMain(solan):
     chuoi = input("Nhập vào tên file log: ")

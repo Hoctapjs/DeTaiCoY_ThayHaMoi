@@ -110,10 +110,10 @@ def compute_eigen(L, D, k=2):
     L_normalized = D_inv_sqrt @ L @ D_inv_sqrt  # Chuan hoa ma tran Laplace
 
     # Giai bai toan tri rieng bang eigsh
-    eigvals, eigvecs = eigsh(L_normalized, k=k, which='SA')  # Dung SA thay vi SM
+    eigvals, eigvecs = eigsh(L, k=k, which='SA')  # Dung SA thay vi SM
 
     # Chuyen lai eigenvectors ve khong gian goc bang cach nhan D^-1/2
-    eigvecs_original = D_inv_sqrt @ eigvecs
+    eigvecs_original = D @ eigvecs
 
     return eigvecs_original
 
@@ -198,12 +198,12 @@ def open_file_dialog():
     file_path = askopenfilename(title="Chon anh", filetypes=[("Image Files", "*.jpg;*.jpeg;*.png;*.bmp")])
     return file_path   
 
-# # 8. Chay thu nghiem
-# if __name__ == "__main__":
-#     # Mo hop thoai chon anh
-#     image_path = open_file_dialog()
-#     if image_path:
-#         logging.info(f"Da chon anh: {image_path}")
-#         normalized_cuts(image_path, k=3)  # Phan vung thanh 3 nhom
-#     else:
-#         logging.info("Khong co anh nao duoc chon.")
+# 8. Chay thu nghiem
+if __name__ == "__main__":
+    # Mo hop thoai chon anh
+    image_path = open_file_dialog()
+    if image_path:
+        logging.info(f"Da chon anh: {image_path}")
+        normalized_cuts(image_path, k=3)  # Phan vung thanh 3 nhom
+    else:
+        logging.info("Khong co anh nao duoc chon.")

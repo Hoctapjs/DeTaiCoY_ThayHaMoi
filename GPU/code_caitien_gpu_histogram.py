@@ -7,6 +7,8 @@ from skimage import io, color
 import cupyx.scipy.sparse as sp
 import time
 import logging
+from scipy.signal import find_peaks
+
 
 def kiemThuChayNhieuLan(i, name):
         temp_chuoi = f"{name}{i}"
@@ -15,9 +17,99 @@ def kiemThuChayNhieuLan(i, name):
                             format='%(asctime)s - %(levelname)s - %(message)s')
         # Duong dan toi anh cua ban
         # Mo hop thoai chon anh
-        """ image_path = "apple3_60x60.jpg"  # Thay bang duong dan anh cua ban """
-        image_path = "apple4_98x100.jpg"  # Thay bang duong dan anh cua ban
+        image_path = "apple3_60x60.jpg"  # Thay bang duong dan anh cua ban
+        """ image_path = "apple4_98x100.jpg"  # Thay bang duong dan anh cua ban """
         normalized_cuts(image_path, k=3)
+
+
+def find_peaks_with_conditions(histogram, delta_threshold, dist_threshold):
+    """
+    Tìm các đỉnh cực đại trong histogram thỏa mãn điều kiện về độ lệch và khoảng cách
+    
+    Args:
+        histogram: Mảng histogram
+        delta_threshold: Ngưỡng độ lệch chiều cao tối thiểu (sigma*)
+        dist_threshold: Ngưỡng khoảng cách tối thiểu (delta*)
+    
+    Returns:
+        peaks: Các vị trí của đỉnh cực đại thỏa mãn điều kiện
+    """
+    # Tìm tất cả các đỉnh cực đại
+    """ peaks, _ = find_peaks(histogram) """
+    peaks, _ = find_peaks(cp.asnumpy(histogram))  # SciPy hỗ trợ NumPy, cần chuyển về NumPy.
+    peaks = cp.array(peaks)  # Chuyển lại về CuPy để tiếp tục xử lý trên GPU.
+    # Lọc các đỉnh theo điều kiện
+    valid_peaks = []
+    
+    for i in range(len(peaks)):
+        is_valid = True
+        for j in range(len(peaks)):
+            if i != j:
+                # Tính độ lệch chiều cao và khoảng cách
+                delta = abs(histogram[peaks[i]] - histogram[peaks[j]])
+                dist = abs(peaks[i] - peaks[j])
+                
+                # Kiểm tra điều kiện theo công thức (3.1) và (3.2)
+                if delta < delta_threshold or dist < dist_threshold:
+                    is_valid = False
+                    break
+        
+        if is_valid:
+            valid_peaks.append(peaks[i])
+    
+    return cp.array(valid_peaks)
+
+def determine_k_from_histogram(image):
+    """
+    Xác định số nhóm k dựa trên phân tích histogram
+    
+    Args:
+        image: Ảnh đầu vào (đã chuẩn hóa về [0, 1])
+        
+    Returns:
+        k: Số nhóm cần phân đoạn
+    """
+    # Chuyển ảnh sang ảnh xám nếu là ảnh màu
+    if len(image.shape) == 3:
+        gray_image = color.rgb2gray(image)
+        gray_image = cp.array(gray_image)  # Chuyển về GPU.
+    else:
+        gray_image = image
+    
+    # Tính histogram
+    histogram, _ = cp.histogram(gray_image, bins=256, range=(0, 1))
+    
+    # Các tham số ngưỡng (cần điều chỉnh dựa trên tập huấn luyện)
+    delta_threshold = cp.max(histogram) * 0.1  # sigma* = 10% của giá trị cao nhất
+    dist_threshold = 20  # delta* = 20 bins
+    
+    # Tìm các đỉnh thỏa mãn điều kiện
+    valid_peaks = find_peaks_with_conditions(histogram, delta_threshold, dist_threshold)
+    
+    # Số nhóm k là số đỉnh hợp lệ
+    k = len(valid_peaks)
+    
+    # Đảm bảo k ít nhất là 2
+    return max(2, k)
+
+def determine_max_k(image, sigma_i=0.1, sigma_x=10):
+    """
+    Xác định số nhóm k tối đa dựa trên histogram
+    
+    Args:
+        image: Ảnh đầu vào
+        sigma_i, sigma_x: Các tham số cho tính toán ma trận trọng số (không sử dụng trong phương pháp mới)
+    
+    Returns:
+        k: Số nhóm tối đa cần phân đoạn
+    """
+    k = determine_k_from_histogram(image)
+    
+    # Giới hạn k dựa trên kích thước ảnh để tránh over-segmentation
+    h, w, _ = image.shape
+    max_k = min(k, int(cp.sqrt(h * w) / 10))
+    
+    return max(2, max_k)
 
 def compute_weight_matrix(image, sigma_i=0.1, sigma_x=10):
     h, w, c = image.shape
@@ -108,6 +200,11 @@ def normalized_cuts(image_path, k=2):
     elif image.shape[2] == 4:  # Neu la anh RGBA, loai bo kenh alpha
         image = image[:, :, :3]
     image = image / 255.0  # Chuan hoa ve [0, 1]
+
+    # Xác định số cụm k dựa trên histogram
+    print("Determining optimal k from histogram...")
+    k = determine_max_k(image)
+    print(f"Optimal k determined: {k}")
     
     # Tinh toan Ncuts
     logging.info("Dang tinh toan ma tran trong so...")
