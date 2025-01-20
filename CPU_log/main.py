@@ -1,5 +1,8 @@
 """ import code_chuan_log as codechuan  # Import file chứa các hàm cần sử dụng """
-import code_caitien_histogram as codechuan  # Import file chứa các hàm cần sử dụng
+# import code_caitien_histogram as codechuan  # Import file chứa các hàm cần sử dụng
+# import code_chuan_COO as codechuan  # Import file chứa các hàm cần sử dụng
+import code_chuan_lanczos as codechuan  # Import file chứa các hàm cần sử dụng
+
 
 def kiemThuChayNhieuLanMain(solan):
     chuoi = input("Nhập vào tên file log: ")
