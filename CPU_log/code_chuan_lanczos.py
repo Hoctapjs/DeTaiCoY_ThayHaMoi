@@ -8,11 +8,13 @@ from skimage import io, color
 import time
 from tkinter import Tk
 from tkinter.filedialog import askopenfilename
-import logging
 from scipy.sparse import coo_matrix #chuyển sang ma trận coo
+from scipy.sparse import isspmatrix, diags
+import logging
 
 
-logging.basicConfig(level=logging.INFO)  
+
+# logging.basicConfig(level=logging.INFO)  
 
 def kiemThuChayNhieuLan(i, name):
         temp_chuoi = f"{name}{i}"
@@ -59,56 +61,56 @@ def compute_weight_matrix(image, sigma_i=0.1, sigma_x=10):
 
 
 # 2. Tinh ma tran Laplace
+def compute_laplacian(W_sparse):
+    # Tạo ma trận đường chéo từ tổng các hàng
+    D_diag = W_sparse.sum(axis=1).A.flatten() if hasattr(W_sparse, 'toarray') else W_sparse.sum(axis=1)
+    D = np.diag(D_diag)  # Ma trận đường chéo
+    L = D - W_sparse.toarray() if hasattr(W_sparse, 'toarray') else D -W_sparse  # Đảm bảo W là dạng mảng NumPy
+
+    logging.info("Kich thuoc ma tran duong cheo (D): %s", D.shape)
+    logging.info("Mau cua D (9 phan tu dau):\n%s", D_diag[:9])  # In phần tử trên đường chéo
+    logging.info("Kich thuoc ma tran Laplace (L): %s", L.shape)
+    logging.info("Mau cua L (9x9 phan tu dau):\n%s", L[:9, :9])
+
+    return L, D
 
 # def compute_laplacian(W_sparse):
-#     # Tạo ma trận đường chéo từ tổng các hàng
-#     D_diag = W_sparse.sum(axis=1).A.flatten() if hasattr(W_sparse, 'toarray') else W_sparse.sum(axis=1)
-#     D = np.diag(D_diag)  # Ma trận đường chéo
-#     L = D - W_sparse.toarray() if hasattr(W_sparse, 'toarray') else D -W_sparse  # Đảm bảo W là dạng mảng NumPy
+#     D_diag = np.array(W_sparse.sum(axis=1)).flatten()
+#     D_inv_sqrt = diags(1.0 / np.sqrt(D_diag + 1e-10))  # Tránh chia cho 0
+#     L_normalized = D_inv_sqrt @ (diags(D_diag) - W_sparse) @ D_inv_sqrt
+#     return L_normalized, D_inv_sqrt
 
-#     logging.info("Kich thuoc ma tran duong cheo (D): %s", D.shape)
-#     logging.info("Mau cua D (9 phan tu dau):\n%s", D_diag[:9])  # In phần tử trên đường chéo
-#     logging.info("Kich thuoc ma tran Laplace (L): %s", L.shape)
-#     logging.info("Mau cua L (9x9 phan tu dau):\n%s", L[:9, :9])
-
-#     return L, D
-
-def compute_laplacian(W_sparse):
-    D_diag = np.array(W_sparse.sum(axis=1)).flatten()
-    D_inv_sqrt = diags(1.0 / np.sqrt(D_diag + 1e-10))  # Tránh chia cho 0
-    L_normalized = D_inv_sqrt @ (diags(D_diag) - W_sparse) @ D_inv_sqrt
-    return L_normalized
-def compute_eigen(L_normalized, k=2):
-    eigvals, eigvecs = eigsh(L_normalized, k=k, which='SM')
-    return eigvecs
+# def compute_eigen(L_normalized, k=2):
+#     eigvals, eigvecs = eigsh(L_normalized, k=k, which='SM')
+#     return eigvecs
 
 
 
 # 3. Giai bai toan tri rieng
-# def compute_eigen(L, D, k=2):
-#     """
-#     Giai bai toan tri rieng bang thuat toan Lanczos (eigsh) tren GPU.
-#     :param L: Ma tran Laplace thua (CuPy sparse matrix).
-#     :param D: Ma tran duong cheo (CuPy sparse matrix).
-#     :param k: So tri rieng nho nhat can tinh.
-#     :return: Cac vector rieng tuong ung (k vector).
-#     """
-#     # Chuan hoa ma tran Laplace: D^-1/2 * L * D^-1/2
-#     D_diag = D.diagonal().copy()  # Lay duong cheo cua D
-#     D_diag[D_diag < 1e-10] = 1e-10  # Trahn chia cho 0 hoac gan 0
-#     D_inv_sqrt = diags(1.0 / np.sqrt(D_diag))  # Tinh D^-1/2
-#     L_normalized = D_inv_sqrt @ L @ D_inv_sqrt  # Chuan hoa ma tran Laplace
+def compute_eigen(L, D, k=2):
+    """
+    Giai bai toan tri rieng bang thuat toan Lanczos (eigsh) tren GPU.
+    :param L: Ma tran Laplace thua (CuPy sparse matrix).
+    :param D: Ma tran duong cheo (CuPy sparse matrix).
+    :param k: So tri rieng nho nhat can tinh.
+    :return: Cac vector rieng tuong ung (k vector).
+    """
+    # Chuan hoa ma tran Laplace: D^-1/2 * L * D^-1/2
+    D_diag = D.diagonal().copy()  # Lay duong cheo cua D
+    D_diag[D_diag < 1e-10] = 1e-10  # Trahn chia cho 0 hoac gan 0
+    D_inv_sqrt = diags(1.0 / np.sqrt(D_diag))  # Tinh D^-1/2
+    L_normalized = D_inv_sqrt @ L @ D_inv_sqrt  # Chuan hoa ma tran Laplace
 
-#     # Giai bai toan tri rieng bang eigsh
-#     eigvals, eigvecs = eigsh(L_normalized, k=k, which='SA')  # Dung SA thay vi SM
+    # Giai bai toan tri rieng bang eigsh
+    eigvals, eigvecs = eigsh(L_normalized, k=k, which='SA')  # Dung SA thay vi SM
 
-#     # Chuyen lai eigenvectors ve khong gian goc bang cach nhan D^-1/2
-#     eigvecs_original = D_inv_sqrt @ eigvecs
+    # Chuyen lai eigenvectors ve khong gian goc bang cach nhan D^-1/2
+    eigvecs_original = D_inv_sqrt @ eigvecs
 
-#     return eigvecs_original
+    return eigvecs_original
 
 
-# def compute_eigen(W_sparse, k=2):  
+# def compute_eigen(W_sparse, k=3):  
 #     """  
 #     Tính trị riêng và vector riêng bằng thuật toán Lanczos.  
 #     :param W_sparse: Ma trận trọng số dạng COO (đối xứng).  
@@ -165,6 +167,86 @@ def compute_eigen(L_normalized, k=2):
 
 #     return eigvecs_original  # Trả về vector riêng
 
+# def compute_eigen(W_sparse, k=2):
+#     """
+#     Optimized Lanczos algorithm for computing eigenvalues and eigenvectors of sparse matrices.
+#     Based on Algorithm 3.2 and 3.3 from the provided theory.
+    
+#     Args:
+#         W_sparse: Sparse symmetric weight matrix (CSR, CSC, or COO format)
+#         k: Number of smallest eigenvalues/eigenvectors to compute
+        
+#     Returns:
+#         Eigenvectors corresponding to k smallest eigenvalues
+#     """
+#     n = W_sparse.shape[0]
+    
+#     # Initialize matrices T and V
+#     T = np.zeros((k, k))  # Tridiagonal matrix
+#     V = np.zeros((n, k))  # Matrix storing Lanczos vectors
+    
+#     # Step 1: Initialize first Lanczos vector
+#     v = np.random.rand(n)
+#     v = v / np.linalg.norm(v)  # Normalize to unit vector
+#     V[:, 0] = v
+    
+#     # w will store A*v
+#     w = W_sparse @ v
+    
+#     # Initial alpha (diagonal element)
+#     alpha = np.dot(v, w)
+#     T[0, 0] = alpha
+    
+#     # Update w and compute first beta
+#     w = w - alpha * v
+#     beta = np.linalg.norm(w)
+    
+#     # Main Lanczos iteration
+#     for j in range(1, k):
+#         # Check for breakdown
+#         if abs(beta) < 1e-12:
+#             break
+            
+#         # Step 2: Update vectors
+#         v_old = v.copy()
+#         v = w / beta
+#         V[:, j] = v
+        
+#         # Compute new w = A*v
+#         w = W_sparse @ v
+        
+#         # Maintain orthogonality (full reorthogonalization)
+#         for i in range(j+1):
+#             coef = np.dot(w, V[:, i])
+#             w = w - coef * V[:, i]
+            
+#         # Update tridiagonal matrix T
+#         alpha = np.dot(v, w)
+#         T[j, j] = alpha
+#         T[j-1, j] = beta
+#         T[j, j-1] = beta
+        
+#         # Update w and compute new beta
+#         w = w - alpha * v - beta * v_old
+#         beta = np.linalg.norm(w)
+        
+#     # Solve eigenvalue problem for tridiagonal matrix
+#     eigenvalues, eigenvectors = np.linalg.eigh(T)
+    
+#     # Sort eigenvalues and corresponding eigenvectors
+#     idx = np.argsort(eigenvalues)[:k]
+#     eigenvalues = eigenvalues[idx]
+#     eigenvectors = eigenvectors[:, idx]
+    
+#     # Transform eigenvectors back to original space
+#     final_eigenvectors = V @ eigenvectors
+    
+#     # Normalize the eigenvectors
+#     for i in range(final_eigenvectors.shape[1]):
+#         final_eigenvectors[:, i] = final_eigenvectors[:, i] / np.linalg.norm(final_eigenvectors[:, i])
+    
+#     return final_eigenvectors
+
 
 # 4. Gan nhan cho tung diem anh dua tren vector rieng
 def assign_labels(eigen_vectors, k):
@@ -220,8 +302,8 @@ def normalized_cuts(image_path, k):
     L, D = compute_laplacian(W)
     
     logging.info("Tinh vector rieng...")
-    # eigen_vectors = compute_eigen(L, D, k=k)  # Tinh k vector rieng
-    eigen_vectors = compute_eigen(W, k=k)  # Tinh k vector rieng
+    eigen_vectors = compute_eigen(L, D, k=k)  # Tinh k vector rieng
+    # eigen_vectors = compute_eigen(W, k=k)  # Tinh k vector rieng
     
     logging.info("Gan nhan cho cac diem anh...")
     labels = assign_labels(eigen_vectors, k)  # Gan nhan cho moi diem anh
