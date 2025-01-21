@@ -67,6 +67,12 @@ def compute_laplacian(W_sparse):
     D = np.diag(D_diag)  # Ma trận đường chéo
     L = D - W_sparse.toarray() if hasattr(W_sparse, 'toarray') else D -W_sparse  # Đảm bảo W là dạng mảng NumPy
 
+
+    # Tạo ma trận đường chéo từ tổng các hàng
+    # D_diag = W_sparse.sum(axis=1).A.flatten() 
+    # D = np.diag(D_diag)  # Ma trận đường chéo
+    # L = D - W_sparse # L = D - W
+
     logging.info("Kich thuoc ma tran duong cheo (D): %s", D.shape)
     logging.info("Mau cua D (9 phan tu dau):\n%s", D_diag[:9])  # In phần tử trên đường chéo
     logging.info("Kich thuoc ma tran Laplace (L): %s", L.shape)
@@ -87,12 +93,27 @@ def compute_laplacian(W_sparse):
 
 
 # 3. Giai bai toan tri rieng
-
 def compute_eigen(L, D, k=2):
-    # Tìm các trị riêng nhỏ nhất (Smallest Magnitude)
-    eigvals, eigvecs = eigsh(L, k=k, which='SA')  
-    return eigvecs
+    """
+    Giai bai toan tri rieng bang thuat toan Lanczos (eigsh) tren GPU.
+    :param L: Ma tran Laplace thua (CuPy sparse matrix).
+    :param D: Ma tran duong cheo (CuPy sparse matrix).
+    :param k: So tri rieng nho nhat can tinh.
+    :return: Cac vector rieng tuong ung (k vector).
+    """
+    # Chuan hoa ma tran Laplace: D^-1/2 * L * D^-1/2
+    D_diag = D.diagonal().copy()  # Lay duong cheo cua D
+    D_diag[D_diag < 1e-10] = 1e-10  # Tranh chia cho 0 hoac gan 0
+    D_inv_sqrt = diags(1.0 / np.sqrt(D_diag))  # Tinh D^-1/2
+    L_normalized = D_inv_sqrt @ L @ D_inv_sqrt  # Chuan hoa ma tran Laplace
 
+    # Giai bai toan tri rieng bang eigsh
+    eigvals, eigvecs = eigsh(L_normalized, k=k, which='SA')  # Dung SA thay vi SM
+
+    # Chuyen lai eigenvectors ve khong gian goc bang cach nhan D^-1/2
+    eigvecs_original = D_inv_sqrt @ eigvecs
+
+    return eigvecs_original
 
 
 # def compute_eigen(W_sparse, k=3):  

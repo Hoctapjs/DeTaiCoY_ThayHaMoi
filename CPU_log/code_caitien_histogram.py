@@ -124,7 +124,8 @@ def compute_laplacian(W):
     L = D - W
     return L, D
 
-def compute_eigen(L, D, k=2):
+# def compute_eigen(L, D, k=2):
+def compute_eigen(L, D, k):
     """
     Tính k vector riêng nhỏ nhất của bài toán trị riêng tổng quát
     """
