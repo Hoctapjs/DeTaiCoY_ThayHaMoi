@@ -89,17 +89,40 @@ def compute_laplacian(W):
     return L, D
 
 # 3. Giai bai toan tri rieng
+
 # def compute_eigen(L, D, k=2):
 #     # Chuyen du lieu ve CPU vi eigsh chua ho tro GPU
 #     L_cpu, D_cpu = L.get(), D.get()
 #     vals, vecs = eigsh(L_cpu, k=k, M=D_cpu, which='SM')  # 'SM' tim tri rieng nho nhat
 #     return cp.array(vecs)  # Tra ve k vector rieng (chuyen ve GPU)
 
+def compute_eigen(L, D, k=2):
+    """
+    Giai bai toan tri rieng bang thuat toan Lanczos (eigsh) tren GPU.
+    :param L: Ma tran Laplace thua (CuPy sparse matrix).
+    :param D: Ma tran duong cheo (CuPy sparse matrix).
+    :param k: So tri rieng nho nhat can tinh.
+    :return: Cac vector rieng tuong ung (k vector).
+    """
+    # Chuan hoa ma tran Laplace: D^-1/2 * L * D^-1/2
+    D_diag = D.diagonal().copy()  # Lay duong cheo cua D
+    D_diag[D_diag < 1e-10] = 1e-10  # Trahn chia cho 0 hoac gan 0
+    D_inv_sqrt = diags(1.0 / cp.sqrt(D_diag))  # Tinh D^-1/2
+    L_normalized = D_inv_sqrt @ L @ D_inv_sqrt  # Chuan hoa ma tran Laplace
 
-def compute_eigen(L, k=2):
-    # Tìm các trị riêng nhỏ nhất (Smallest Magnitude)
-    eigvals, eigvecs = eigsh(L, k=k, which='SA')  
-    return eigvecs
+    # Giai bai toan tri rieng bang eigsh
+    eigvals, eigvecs = eigsh(L_normalized, k=k, which='SA')  # Dung SA thay vi SM
+
+    # Chuyen lai eigenvectors ve khong gian goc bang cach nhan D^-1/2
+    eigvecs_original = D_inv_sqrt @ eigvecs
+
+    return eigvecs_original
+
+
+# def compute_eigen(L, k=2):
+#     # Tìm các trị riêng nhỏ nhất (Smallest Magnitude)
+#     eigvals, eigvecs = eigsh(L, k=k, which='SA')  
+#     return eigvecs
 
 
 
@@ -161,7 +184,7 @@ def normalized_cuts(image_path, k=2):
     L, D = compute_laplacian(W)
     
     logging.info("Tinh eigenvectors...")
-    eigen_vectors = compute_eigen(L, k=k)  # Tinh k vector rieng
+    eigen_vectors = compute_eigen(L,D, k=k)  # Tinh k vector rieng
     
     logging.info("Phan vung do thi...")
     labels = assign_labels(eigen_vectors, k)  # Gan nhan cho moi diem anh
