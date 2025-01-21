@@ -79,13 +79,13 @@ def compute_weight_matrix(image, sigma_i=0.1, sigma_x=10):
 
 # 2. Tinh ma tran Laplace
 def compute_laplacian(W):
-    W_sparse = sp.csr_matrix(W)  # Chuyen W thanh ma tran thua
-    D_diag = W_sparse.sum(axis=1).get()  # Tinh tong cac hang
-    D = sp.diags(D_diag.flatten())  # Tao ma tran duong cheo tu tong
-    L = D - W_sparse  # L = D - W
-    logging.info("Kich thuoc ma tran duong cheo (D):", D.shape)
-    logging.info("Kich thuoc ma tran trong so W:", W_sparse.shape)
-    logging.info("Kich thuoc ma tran Laplace (L):", L.shape)
+    D = cp.diag(W.sum(axis=1))  # Ma trận đường chéo
+    L = D - W
+    logging.info("Kích thước ma trận đường chéo (D):", D.shape)
+    logging.info("Mẫu của D (9x9 phần tử đầu):\n", D[:9, :9])
+    logging.info("Kích thước ma trận Laplace (L):", L.shape)
+    logging.info("Mẫu của L (9x9 phần tử đầu):\n", L[:9, :9])
+    
     return L, D
 
 # 3. Giai bai toan tri rieng
@@ -95,27 +95,13 @@ def compute_laplacian(W):
 #     vals, vecs = eigsh(L_cpu, k=k, M=D_cpu, which='SM')  # 'SM' tim tri rieng nho nhat
 #     return cp.array(vecs)  # Tra ve k vector rieng (chuyen ve GPU)
 
-def compute_eigen(L, D, k=2):
-    """
-    Giai bai toan tri rieng bang thuat toan Lanczos (eigsh) tren GPU.
-    :param L: Ma tran Laplace thua (CuPy sparse matrix).
-    :param D: Ma tran duong cheo (CuPy sparse matrix).
-    :param k: So tri rieng nho nhat can tinh.
-    :return: Cac vector rieng tuong ung (k vector).
-    """
-    # Chuan hoa ma tran Laplace: D^-1/2 * L * D^-1/2
-    D_diag = D.diagonal()  # Lay duong cheo cua D
-    D_diag[D_diag < 1e-10] = 1e-10  # Trahn chia cho 0 hoac gan 0
-    D_inv_sqrt = diags(1.0 / cp.sqrt(D_diag))  # Tinh D^-1/2
-    L_normalized = D_inv_sqrt @ L @ D_inv_sqrt  # Chuan hoa ma tran Laplace
 
-    # Giai bai toan tri rieng bang eigsh
-    eigvals, eigvecs = eigsh(L, k=k, which='SA')  # Dung SA thay vi SM
+def compute_eigen(L, k=2):
+    # Tìm các trị riêng nhỏ nhất (Smallest Magnitude)
+    eigvals, eigvecs = eigsh(L, k=k, which='SA')  
+    return eigvecs
 
-    # Chuyen lai eigenvectors ve khong gian goc bang cach nhan D^-1/2
-    eigvecs_original = D @ eigvecs
 
-    return eigvecs_original
 
 # 4. Gan nhan cho tung diem anh duoc dua tren vector rieng
 def assign_labels(eigen_vectors, k):
@@ -175,7 +161,7 @@ def normalized_cuts(image_path, k=2):
     L, D = compute_laplacian(W)
     
     logging.info("Tinh eigenvectors...")
-    eigen_vectors = compute_eigen(L, D, k=k)  # Tinh k vector rieng
+    eigen_vectors = compute_eigen(L, k=k)  # Tinh k vector rieng
     
     logging.info("Phan vung do thi...")
     labels = assign_labels(eigen_vectors, k)  # Gan nhan cho moi diem anh

@@ -5,6 +5,8 @@ from scipy.sparse.linalg import eigsh
 from sklearn.cluster import KMeans
 from skimage import io, color
 import cupyx.scipy.sparse as sp
+from tkinter import Tk
+from tkinter.filedialog import askopenfilename
 import time
 import logging
 
@@ -43,13 +45,13 @@ def compute_weight_matrix(image, sigma_i=0.1, sigma_x=10):
 
 # 2. Tinh ma tran Laplace
 def compute_laplacian(W):
-    W_sparse = sp.csr_matrix(W)  # Chuyen W thanh ma tran thua
-    D_diag = W_sparse.sum(axis=1).get()  # Tinh tong cac hang
-    D = sp.diags(D_diag.flatten())  # Tao ma tran duong cheo tu tong
-    L = D - W_sparse  # L = D - W
-    logging.info("Kich thuoc ma tran duong cheo (D):", D.shape)
-    logging.info("Kich thuoc ma tran trong so W:", W_sparse.shape)
-    logging.info("Kich thuoc ma tran Laplace (L):", L.shape)
+    D = cp.diag(W.sum(axis=1))  # Ma trận đường chéo
+    L = D - W
+    logging.info("Kích thước ma trận đường chéo (D):", D.shape)
+    logging.info("Mẫu của D (9x9 phần tử đầu):\n", D[:9, :9])
+    logging.info("Kích thước ma trận Laplace (L):", L.shape)
+    logging.info("Mẫu của L (9x9 phần tử đầu):\n", L[:9, :9])
+    
     return L, D
 
 # 3. Giai bai toan tri rieng
@@ -129,3 +131,23 @@ def normalized_cuts(image_path, k=2):
     logging.info(f"Thoi gian: {end_gpu - start_gpu} giay")
 
     display_segmentation(image, labels, k)
+
+# 7. Mo file chon anh tu hop thoai
+def open_file_dialog():
+    # Tao cua so an cho tkinter
+    root = Tk()
+    root.withdraw()  # An cua so chinh
+    
+    # Mo hop thoai chon file anh
+    file_path = askopenfilename(title="Chon anh", filetypes=[("Image Files", "*.jpg;*.jpeg;*.png;*.bmp")])
+    return file_path   
+
+# 8. Chay thu nghiem
+if __name__ == "__main__":
+    # Mo hop thoai chon anh
+    image_path = open_file_dialog()
+    if image_path:
+        logging.info(f"Da chon anh: {image_path}")
+        normalized_cuts(image_path, k=3)  # Phan vung thanh 3 nhom
+    else:
+        logging.info("Khong co anh nao duoc chon.")

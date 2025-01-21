@@ -2,7 +2,6 @@ import numpy as np
 import matplotlib.pyplot as plt
 from sklearn.metrics.pairwise import rbf_kernel
 from scipy.sparse.linalg import eigsh
-from scipy.sparse import diags
 from sklearn.cluster import KMeans
 from skimage import io, color
 import time
@@ -21,8 +20,16 @@ def kiemThuChayNhieuLan(i, name):
         image_path = "apple3_60x60.jpg"  # Thay bang duong dan anh cua ban
         """ image_path = "apple4_98x100.jpg"  # Thay bang duong dan anh cua ban """
         normalized_cuts(image_path, k=3)
-        
 
+        # Mở hộp thoại chọn ảnh
+        # image_path = open_file_dialog()
+        # if image_path:
+        #     logging.info(f"Da chon anh: {image_path}")
+        #     normalized_cuts(image_path, k=3)  # Phan vung thanh 3 nhom
+        # else:
+        #     logging.info("Khong co anh nao duoc chon.")
+
+    
 
 # 1. Tinh ma tran trong so
 def compute_weight_matrix(image, sigma_i=0.1, sigma_x=10):
@@ -57,43 +64,23 @@ def compute_weight_matrix(image, sigma_i=0.1, sigma_x=10):
 
 
 # 2. Tinh ma tran Laplace
-
 def compute_laplacian(W_sparse):
     # Tạo ma trận đường chéo từ tổng các hàng
-    D_diag = W_sparse.sum(axis=1).A.flatten() if hasattr(W_sparse, 'toarray') else W_sparse.sum(axis=1)
+    D_diag = W_sparse.sum(axis=1).A.flatten() 
     D = np.diag(D_diag)  # Ma trận đường chéo
-    L = D - W_sparse.toarray() if hasattr(W_sparse, 'toarray') else D -W_sparse  # Đảm bảo W là dạng mảng NumPy
-
+    L = D - W_sparse # L = D - W
     logging.info("Kich thuoc ma tran duong cheo (D): %s", D.shape)
     logging.info("Mau cua D (9 phan tu dau):\n%s", D_diag[:9])  # In phần tử trên đường chéo
     logging.info("Kich thuoc ma tran Laplace (L): %s", L.shape)
     logging.info("Mau cua L (9x9 phan tu dau):\n%s", L[:9, :9])
-
     return L, D
 
 
 # 3. Giai bai toan tri rieng
 def compute_eigen(L, D, k=2):
-    """
-    Giai bai toan tri rieng bang thuat toan Lanczos (eigsh) tren GPU.
-    :param L: Ma tran Laplace thua (CuPy sparse matrix).
-    :param D: Ma tran duong cheo (CuPy sparse matrix).
-    :param k: So tri rieng nho nhat can tinh.
-    :return: Cac vector rieng tuong ung (k vector).
-    """
-    # Chuan hoa ma tran Laplace: D^-1/2 * L * D^-1/2
-    D_diag = D.diagonal().copy()  # Lay duong cheo cua D
-    D_diag[D_diag < 1e-10] = 1e-10  # Trahn chia cho 0 hoac gan 0
-    D_inv_sqrt = diags(1.0 / np.sqrt(D_diag))  # Tinh D^-1/2
-    L_normalized = D_inv_sqrt @ L @ D_inv_sqrt  # Chuan hoa ma tran Laplace
-
-    # Giai bai toan tri rieng bang eigsh
-    eigvals, eigvecs = eigsh(L_normalized, k=k, which='SA')  # Dung SA thay vi SM
-
-    # Chuyen lai eigenvectors ve khong gian goc bang cach nhan D^-1/2
-    eigvecs_original = D_inv_sqrt @ eigvecs
-
-    return eigvecs_original
+    # Tìm các trị riêng nhỏ nhất (Smallest Magnitude)
+    eigvals, eigvecs = eigsh(L, k=k, which='SA')  
+    return eigvecs
 
 
 # 4. Gan nhan cho tung diem anh dua tren vector rieng
@@ -101,7 +88,6 @@ def assign_labels(eigen_vectors, k):
     # Dung K-Means de gan nhan
     kmeans = KMeans(n_clusters=k, random_state=0).fit(eigen_vectors)
     labels = kmeans.labels_
-    
     logging.info(f"Nhan gan cho 27 pixel dau tien: {labels[:27]}")
     return labels
 
