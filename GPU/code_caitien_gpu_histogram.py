@@ -145,11 +145,10 @@ def compute_laplacian(W):
     return L, D
 
 # 3. Giai bai toan tri rieng
-def compute_eigen(L, D, k=2):
-    # Chuyen du lieu ve CPU vi eigsh chua ho tro GPU
-    L_cpu, D_cpu = L.get(), D.get()
-    vals, vecs = eigsh(L_cpu, k=k, M=D_cpu, which='SM')  # 'SM' tim tri rieng nho nhat
-    return cp.array(vecs)  # Tra ve k vector rieng (chuyen ve GPU)
+def compute_eigen(L, k=2):
+    # Tìm các trị riêng nhỏ nhất (Smallest Magnitude)
+    eigvals, eigvecs = eigsh(L, k=k, which='SA')  
+    return eigvecs
 
 # 4. Gan nhan cho tung diem anh dua tren vector rieng
 def assign_labels(eigen_vectors, k):
@@ -214,7 +213,7 @@ def normalized_cuts(image_path, k=2):
     L, D = compute_laplacian(W)
     
     logging.info("Dang tinh vector rieng...")
-    eigen_vectors = compute_eigen(L, D, k=k)  # Tinh k vector rieng
+    eigen_vectors = compute_eigen(L, k=k)  # Tinh k vector rieng
     
     logging.info("Dang phan vung do thi...")
     labels = assign_labels(eigen_vectors, k)  # Gan nhan cho moi diem anh

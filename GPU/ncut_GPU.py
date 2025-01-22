@@ -1,7 +1,7 @@
 import cupy as cp  # Thay thế NumPy bằng CuPy
 import matplotlib.pyplot as plt
 from sklearn.metrics.pairwise import rbf_kernel
-from scipy.sparse.linalg import eigsh
+from cupyx.scipy.sparse.linalg import eigsh
 from sklearn.cluster import KMeans
 from skimage import io, color
 import cupyx.scipy.sparse as sp
@@ -17,8 +17,8 @@ def kiemThuChayNhieuLan(i, name):
                             format='%(asctime)s - %(levelname)s - %(message)s')
         # Duong dan toi anh cua ban
         # Mo hop thoai chon anh
-        """ image_path = "apple3_60x60.jpg"  # Thay bang duong dan anh cua ban """
-        image_path = "apple4_98x100.jpg"  # Thay bang duong dan anh cua ban
+        image_path = "apple3_60x60.jpg"  # Thay bang duong dan anh cua ban
+        """ image_path = "apple4_98x100.jpg"  # Thay bang duong dan anh cua ban """
         normalized_cuts(image_path, k=3)
 
 def compute_weight_matrix(image, sigma_i=0.1, sigma_x=10):
@@ -54,12 +54,17 @@ def compute_laplacian(W):
     
     return L, D
 
-# 3. Giai bai toan tri rieng
+""" # 3. Giai bai toan tri rieng
 def compute_eigen(L, D, k=2):
     # Chuyen du lieu ve CPU vi eigsh chua ho tro GPU
     L_cpu, D_cpu = L.get(), D.get()
     vals, vecs = eigsh(L_cpu, k=k, M=D_cpu, which='SM')  # 'SM' tim tri rieng nho nhat
-    return cp.array(vecs)  # Tra ve k vector rieng (chuyen ve GPU)
+    return cp.array(vecs)  # Tra ve k vector rieng (chuyen ve GPU) """
+# 3. Giai bai toan tri rieng
+def compute_eigen(L, k=2):
+    # Tìm các trị riêng nhỏ nhất (Smallest Magnitude)
+    eigvals, eigvecs = eigsh(L, k=k, which='SA')  
+    return eigvecs
 
 # 4. Gan nhan cho tung diem anh dua tren vector rieng
 def assign_labels(eigen_vectors, k):
@@ -119,7 +124,7 @@ def normalized_cuts(image_path, k=2):
     L, D = compute_laplacian(W)
     
     logging.info("Dang tinh vector rieng...")
-    eigen_vectors = compute_eigen(L, D, k=k)  # Tinh k vector rieng
+    eigen_vectors = compute_eigen(L, k=k)  # Tinh k vector rieng
     
     logging.info("Dang phan vung do thi...")
     labels = assign_labels(eigen_vectors, k)  # Gan nhan cho moi diem anh
@@ -142,7 +147,7 @@ def open_file_dialog():
     file_path = askopenfilename(title="Chon anh", filetypes=[("Image Files", "*.jpg;*.jpeg;*.png;*.bmp")])
     return file_path   
 
-# 8. Chay thu nghiem
+""" # 8. Chay thu nghiem
 if __name__ == "__main__":
     # Mo hop thoai chon anh
     image_path = open_file_dialog()
@@ -150,4 +155,4 @@ if __name__ == "__main__":
         logging.info(f"Da chon anh: {image_path}")
         normalized_cuts(image_path, k=3)  # Phan vung thanh 3 nhom
     else:
-        logging.info("Khong co anh nao duoc chon.")
+        logging.info("Khong co anh nao duoc chon.") """

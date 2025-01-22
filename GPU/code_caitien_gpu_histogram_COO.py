@@ -225,7 +225,7 @@ def normalized_cuts(image_path, k=2):
     L, D = compute_laplacian(W)
     
     logging.info("Dang tinh vector rieng...")
-    eigen_vectors = compute_eigen(L, D, k=k)  # Tinh k vector rieng
+    eigen_vectors = compute_eigen(L, k=k)  # Tinh k vector rieng
     
     logging.info("Dang phan vung do thi...")
     labels = assign_labels(eigen_vectors, k)  # Gan nhan cho moi diem anh
