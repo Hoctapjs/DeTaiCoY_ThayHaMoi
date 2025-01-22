@@ -1,19 +1,18 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from sklearn.metrics.pairwise import rbf_kernel
-from scipy.sparse.linalg import eigsh, LinearOperator
-from scipy.sparse import diags
+from scipy.sparse.linalg import eigsh
 from sklearn.cluster import KMeans
 from skimage import io, color
 import time
 from tkinter import Tk
 from tkinter.filedialog import askopenfilename
-from scipy.sparse import coo_matrix #chuyển sang ma trận coo
-from scipy.sparse import isspmatrix, diags
 import logging
+from scipy.sparse import coo_matrix #chuyển sang ma trận coo
+from scipy.signal import find_peaks
+from scipy.sparse import diags
 
 
-# logging.basicConfig(level=logging.INFO)  
 
 def kiemThuChayNhieuLan(i, name):
         temp_chuoi = f"{name}{i}"
@@ -24,8 +23,102 @@ def kiemThuChayNhieuLan(i, name):
         image_path = "apple3_60x60.jpg"  # Thay bang duong dan anh cua ban
         """ image_path = "apple4_98x100.jpg"  # Thay bang duong dan anh cua ban """
         normalized_cuts(image_path, k=3)
-        
 
+        # Mở hộp thoại chọn ảnh
+        # image_path = open_file_dialog()
+        # if image_path:
+        #     logging.info(f"Da chon anh: {image_path}")
+        #     normalized_cuts(image_path, k=3)  # Phan vung thanh 3 nhom
+        # else:
+        #     logging.info("Khong co anh nao duoc chon.")
+
+    
+def find_peaks_with_conditions(histogram, delta_threshold, dist_threshold):
+    """
+    Tìm các đỉnh cực đại trong histogram thỏa mãn điều kiện về độ lệch và khoảng cách
+    
+    Args:
+        histogram: Mảng histogram
+        delta_threshold: Ngưỡng độ lệch chiều cao tối thiểu (sigma*)
+        dist_threshold: Ngưỡng khoảng cách tối thiểu (delta*)
+    
+    Returns:
+        peaks: Các vị trí của đỉnh cực đại thỏa mãn điều kiện
+    """
+    # Tìm tất cả các đỉnh cực đại
+    peaks, _ = find_peaks(histogram)
+    
+    # Lọc các đỉnh theo điều kiện
+    valid_peaks = []
+    
+    for i in range(len(peaks)):
+        is_valid = True
+        for j in range(len(peaks)):
+            if i != j:
+                # Tính độ lệch chiều cao và khoảng cách
+                delta = abs(histogram[peaks[i]] - histogram[peaks[j]])
+                dist = abs(peaks[i] - peaks[j])
+                
+                # Kiểm tra điều kiện theo công thức (3.1) và (3.2)
+                if delta < delta_threshold or dist < dist_threshold:
+                    is_valid = False
+                    break
+        
+        if is_valid:
+            valid_peaks.append(peaks[i])
+    
+    return np.array(valid_peaks)
+
+def determine_k_from_histogram(image):
+    """
+    Xác định số nhóm k dựa trên phân tích histogram
+    
+    Args:
+        image: Ảnh đầu vào (đã chuẩn hóa về [0, 1])
+        
+    Returns:
+        k: Số nhóm cần phân đoạn
+    """
+    # Chuyển ảnh sang ảnh xám nếu là ảnh màu
+    if len(image.shape) == 3:
+        gray_image = color.rgb2gray(image)
+    else:
+        gray_image = image
+    
+    # Tính histogram
+    histogram, _ = np.histogram(gray_image, bins=256, range=(0, 1))
+    
+    # Các tham số ngưỡng (cần điều chỉnh dựa trên tập huấn luyện)
+    delta_threshold = np.max(histogram) * 0.1  # sigma* = 10% của giá trị cao nhất
+    dist_threshold = 20  # delta* = 20 bins
+    
+    # Tìm các đỉnh thỏa mãn điều kiện
+    valid_peaks = find_peaks_with_conditions(histogram, delta_threshold, dist_threshold)
+    
+    # Số nhóm k là số đỉnh hợp lệ
+    k = len(valid_peaks)
+    
+    # Đảm bảo k ít nhất là 2
+    return max(2, k)
+
+def determine_max_k(image, sigma_i=0.1, sigma_x=10):
+    """
+    Xác định số nhóm k tối đa dựa trên histogram
+    
+    Args:
+        image: Ảnh đầu vào
+        sigma_i, sigma_x: Các tham số cho tính toán ma trận trọng số (không sử dụng trong phương pháp mới)
+    
+    Returns:
+        k: Số nhóm tối đa cần phân đoạn
+    """
+    k = determine_k_from_histogram(image)
+    
+    # Giới hạn k dựa trên kích thước ảnh để tránh over-segmentation
+    h, w, _ = image.shape
+    max_k = min(k, int(np.sqrt(h * w) / 10))
+    
+    return max(2, max_k)
 
 # 1. Tinh ma tran trong so
 def compute_weight_matrix(image, sigma_i=0.1, sigma_x=10):
@@ -62,33 +155,14 @@ def compute_weight_matrix(image, sigma_i=0.1, sigma_x=10):
 # 2. Tinh ma tran Laplace
 def compute_laplacian(W_sparse):
     # Tạo ma trận đường chéo từ tổng các hàng
-    D_diag = W_sparse.sum(axis=1).A.flatten() if hasattr(W_sparse, 'toarray') else W_sparse.sum(axis=1)
+    D_diag = W_sparse.sum(axis=1).A.flatten() 
     D = np.diag(D_diag)  # Ma trận đường chéo
-    L = D - W_sparse.toarray() if hasattr(W_sparse, 'toarray') else D -W_sparse  # Đảm bảo W là dạng mảng NumPy
-
-
-    # Tạo ma trận đường chéo từ tổng các hàng
-    # D_diag = W_sparse.sum(axis=1).A.flatten() 
-    # D = np.diag(D_diag)  # Ma trận đường chéo
-    # L = D - W_sparse # L = D - W
-
+    L = D - W_sparse # L = D - W
     logging.info("Kich thuoc ma tran duong cheo (D): %s", D.shape)
     logging.info("Mau cua D (9 phan tu dau):\n%s", D_diag[:9])  # In phần tử trên đường chéo
     logging.info("Kich thuoc ma tran Laplace (L): %s", L.shape)
     logging.info("Mau cua L (9x9 phan tu dau):\n%s", L[:9, :9])
-
     return L, D
-
-# def compute_laplacian(W_sparse):
-#     D_diag = np.array(W_sparse.sum(axis=1)).flatten()
-#     D_inv_sqrt = diags(1.0 / np.sqrt(D_diag + 1e-10))  # Tránh chia cho 0
-#     L_normalized = D_inv_sqrt @ (diags(D_diag) - W_sparse) @ D_inv_sqrt
-#     return L_normalized, D_inv_sqrt
-
-# def compute_eigen(L_normalized, k=2):
-#     eigvals, eigvecs = eigsh(L_normalized, k=k, which='SM')
-#     return eigvecs
-
 
 
 # 3. Giai bai toan tri rieng
@@ -115,150 +189,11 @@ def compute_eigen(L, D, k=2):
     return eigvecs_original
 
 
-# def compute_eigen(W_sparse, k=3):  
-#     """  
-#     Tính trị riêng và vector riêng bằng thuật toán Lanczos.  
-#     :param W_sparse: Ma trận trọng số dạng COO (đối xứng).  
-#     :param k: Số trị riêng nhỏ nhất cần tính.  
-#     :return: Các vector riêng tương ứng (k vector).  
-#     """  
-#     n = W_sparse.shape[0]  # Kích thước ma trận  
-
-#     # 1. Khởi tạo biến  
-#     v = np.zeros(n)  # Khởi tạo vector v  
-#     beta = 1.0  # Khởi tạo β0  
-#     k_iter = 0  # Số lần lặp k  
-#     T = np.zeros((min(k, n), min(k, n)))  # Ma trận tridiagonal T  
-#     V = np.zeros((n, min(k, n)))  # Ma trận chứa các vector Lanczos  
-#     W = W_sparse.toarray()  # Chuyển ma trận vào dạng NumPy cho tính toán  
-
-#     # 2. Gán giá trị cho vector đơn vị ban đầu  
-#     v = np.random.rand(n)  
-#     v /= np.linalg.norm(v)  
-
-#     while beta > 1e-10 and k_iter < k:  
-#         V[:, k_iter] = v  # Gán vector hiện tại vào V  
-#         w = W @ v  # Tính Av  
-
-#         if k_iter > 0:  
-#             w -= beta * V[:, k_iter - 1]  # Thực hiện phép trừ β*v_(k-1)  
-
-#         # Tính alpha = <v, w>  
-#         alpha = np.dot(v, w)  
-#         T[k_iter, k_iter] = alpha  # Gán giá trị alpha vào đường chéo của T  
-#         w -= alpha * v  # Thực hiện phép trừ alpha*v  
-
-#         # Tính beta = ||w||  
-#         beta = np.linalg.norm(w)  
-#         if beta > 1e-10:  
-#             v = w / beta  # Chuẩn hóa v  
-
-#         if k_iter < k - 1:  
-#             T[k_iter, k_iter + 1] = beta  # Gán giá trị vào đường chéo trên  
-#             T[k_iter + 1, k_iter] = beta  # Gán giá trị vào đường chéo dưới  
-
-#         k_iter += 1  
-
-#     # 3. Tính trị riêng và vector riêng từ ma trận T  
-#     eigenvalues, eigenvectors = np.linalg.eigh(T)  # Tính toán trị riêng và vector riêng  
-
-#     # 4. Chọn k trị riêng nhỏ nhất và vector riêng tương ứng  
-#     idx = np.argsort(eigenvalues)[:k]  
-#     eigenvalues = eigenvalues[idx]  
-#     eigenvectors = eigenvectors[:, idx]  
-
-#     # 5. Chuyển đổi vector riêng về không gian gốc  
-#     eigvecs_original = V[:, :k] @ eigenvectors  # Chuyển đổi về không gian gốc  
-
-#     return eigvecs_original  # Trả về vector riêng
-
-# def compute_eigen(W_sparse, k=2):
-#     """
-#     Optimized Lanczos algorithm for computing eigenvalues and eigenvectors of sparse matrices.
-#     Based on Algorithm 3.2 and 3.3 from the provided theory.
-    
-#     Args:
-#         W_sparse: Sparse symmetric weight matrix (CSR, CSC, or COO format)
-#         k: Number of smallest eigenvalues/eigenvectors to compute
-        
-#     Returns:
-#         Eigenvectors corresponding to k smallest eigenvalues
-#     """
-#     n = W_sparse.shape[0]
-    
-#     # Initialize matrices T and V
-#     T = np.zeros((k, k))  # Tridiagonal matrix
-#     V = np.zeros((n, k))  # Matrix storing Lanczos vectors
-    
-#     # Step 1: Initialize first Lanczos vector
-#     v = np.random.rand(n)
-#     v = v / np.linalg.norm(v)  # Normalize to unit vector
-#     V[:, 0] = v
-    
-#     # w will store A*v
-#     w = W_sparse @ v
-    
-#     # Initial alpha (diagonal element)
-#     alpha = np.dot(v, w)
-#     T[0, 0] = alpha
-    
-#     # Update w and compute first beta
-#     w = w - alpha * v
-#     beta = np.linalg.norm(w)
-    
-#     # Main Lanczos iteration
-#     for j in range(1, k):
-#         # Check for breakdown
-#         if abs(beta) < 1e-12:
-#             break
-            
-#         # Step 2: Update vectors
-#         v_old = v.copy()
-#         v = w / beta
-#         V[:, j] = v
-        
-#         # Compute new w = A*v
-#         w = W_sparse @ v
-        
-#         # Maintain orthogonality (full reorthogonalization)
-#         for i in range(j+1):
-#             coef = np.dot(w, V[:, i])
-#             w = w - coef * V[:, i]
-            
-#         # Update tridiagonal matrix T
-#         alpha = np.dot(v, w)
-#         T[j, j] = alpha
-#         T[j-1, j] = beta
-#         T[j, j-1] = beta
-        
-#         # Update w and compute new beta
-#         w = w - alpha * v - beta * v_old
-#         beta = np.linalg.norm(w)
-        
-#     # Solve eigenvalue problem for tridiagonal matrix
-#     eigenvalues, eigenvectors = np.linalg.eigh(T)
-    
-#     # Sort eigenvalues and corresponding eigenvectors
-#     idx = np.argsort(eigenvalues)[:k]
-#     eigenvalues = eigenvalues[idx]
-#     eigenvectors = eigenvectors[:, idx]
-    
-#     # Transform eigenvectors back to original space
-#     final_eigenvectors = V @ eigenvectors
-    
-#     # Normalize the eigenvectors
-#     for i in range(final_eigenvectors.shape[1]):
-#         final_eigenvectors[:, i] = final_eigenvectors[:, i] / np.linalg.norm(final_eigenvectors[:, i])
-    
-#     return final_eigenvectors
-
-
 # 4. Gan nhan cho tung diem anh dua tren vector rieng
 def assign_labels(eigen_vectors, k):
     # Dung K-Means de gan nhan
     kmeans = KMeans(n_clusters=k, random_state=0).fit(eigen_vectors)
     labels = kmeans.labels_
-    
     logging.info(f"Nhan gan cho 27 pixel dau tien: {labels[:27]}")
     return labels
 
@@ -299,6 +234,11 @@ def normalized_cuts(image_path, k):
         image = image[:, :, :3]
     image = image / 255.0  # Chuan hoa ve [0, 1]
     
+      # Xác định số cụm k dựa trên histogram
+    logging.info("Determining optimal k from histogram...")
+    k = determine_max_k(image)
+    logging.info(f"Optimal k determined: {k}")
+
     # Tinh toan Ncuts
     logging.info("Bat dau tinh ma tran trong so...")
     W = compute_weight_matrix(image)
@@ -308,7 +248,6 @@ def normalized_cuts(image_path, k):
     
     logging.info("Tinh vector rieng...")
     eigen_vectors = compute_eigen(L, D, k=k)  # Tinh k vector rieng
-    # eigen_vectors = compute_eigen(W, k=k)  # Tinh k vector rieng
     
     logging.info("Gan nhan cho cac diem anh...")
     labels = assign_labels(eigen_vectors, k)  # Gan nhan cho moi diem anh
