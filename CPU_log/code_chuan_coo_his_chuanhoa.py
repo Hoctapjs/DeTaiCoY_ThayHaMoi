@@ -234,7 +234,7 @@ def normalized_cuts(image_path, k):
         image = image[:, :, :3]
     image = image / 255.0  # Chuan hoa ve [0, 1]
     
-      # Xác định số cụm k dựa trên histogram
+    # Xác định số cụm k dựa trên histogram
     logging.info("Determining optimal k from histogram...")
     k = determine_max_k(image)
     logging.info(f"Optimal k determined: {k}")

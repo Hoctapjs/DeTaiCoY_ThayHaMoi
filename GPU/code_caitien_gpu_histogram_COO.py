@@ -8,6 +8,7 @@ import cupyx.scipy.sparse as sp
 import time
 import logging
 from scipy.signal import find_peaks
+from cupyx.scipy.sparse import coo_matrix
 
 
 def kiemThuChayNhieuLan(i, name):
@@ -113,43 +114,53 @@ def determine_max_k(image, sigma_i=0.1, sigma_x=10):
 
 def compute_weight_matrix(image, sigma_i=0.1, sigma_x=10):
     h, w, c = image.shape
+    coords = cp.array(cp.meshgrid(cp.arange(h), cp.arange(w))).reshape(2, -1).T  # Tọa độ (x, y)
+    features = image.reshape(-1, c)  # Đặc trưng màu
+
     logging.info(f"Kich thuoc anh: {h}x{w}x{c}")
-
-    # Toa do (x, y)
-    coords = cp.array(cp.meshgrid(cp.arange(h), cp.arange(w))).reshape(2, -1).T
-
-    # Dac trung mau
-    features = cp.array(image).reshape(-1, c)
-
     logging.info(f"Kich thuoc dac trung mau: {features.shape}, Kich thuoc toa do: {coords.shape}")
-    logging.info(f"Dac trung mau (9 phan tu dau):\n{features[:9, :9]}")
-    logging.info(f"Toa do (9 phan tu dau):\n{coords[:9, :9]}")
-    
-    # Tinh ma tran trong so bang vector hoa
-    W_color = cp.array(rbf_kernel(features.get(), gamma=1 / (2 * sigma_i**2)))
-    W_space = cp.array(rbf_kernel(coords.get(), gamma=1 / (2 * sigma_x**2)))
-    W = W_color * W_space
+    logging.info(f"Dac trung mau:\n{features[:9, :9]}")
+    logging.info(f"Toa do:\n{coords[:9, :9]}")
 
-    logging.info(f"Manh cua W (9x9 phan tu dau):\n{W[:9, :9]}")
-    return W
+    # Tính độ tương đồng về đặc trưng và không gian
+    W_features = rbf_kernel(cp.asnumpy(features), gamma=1/(2 * sigma_i**2))  # Chuyển dữ liệu từ GPU sang CPU
+    W_coords = rbf_kernel(cp.asnumpy(coords), gamma=1/(2 * sigma_x**2))  # Chuyển dữ liệu từ GPU sang CPU
+
+    # Chuyển kết quả từ NumPy (CPU) sang CuPy (GPU)
+    W_features = cp.asarray(W_features)
+    W_coords = cp.asarray(W_coords)
+
+    W = cp.multiply(W_features, W_coords)  # Phép nhân phần tử của ma trận trên GPU
+
+    # Chuyển thành ma trận thưa dạng COO
+    W_sparse = coo_matrix(W)
+
+    logging.info(f"Kich thuoc ma tran trong so (W): {W.shape}")
+    logging.info(f"Kich thuoc ma tran thua (W_sparse): {W_sparse.shape}")
+    logging.info(f"So luong phan tu khac 0: {W_sparse.nnz}")
+    logging.info(f"Mau cua W_features (9x9 phan tu dau):\n{W_features[:9, :9]}")
+    logging.info(f"Mau cua W_coords (9x9 phan tu dau):\n{W_coords[:9, :9]}")
+    logging.info(f"Mau cua W (9x9 phan tu dau):\n{W[:9, :9]}")
+
+    return W_sparse
 
 # 2. Tinh ma tran Laplace
-def compute_laplacian(W):
-    W_sparse = sp.csr_matrix(W)  # Chuyen W thanh ma tran thua
-    D_diag = W_sparse.sum(axis=1).get()  # Tinh tong cac hang
-    D = sp.diags(D_diag.flatten())  # Tao ma tran duong cheo tu tong
+def compute_laplacian(W_sparse):
+    # Tổng của các hàng trong ma trận W
+    D_diag = W_sparse.sum(axis=1).get().flatten()  # Tính tổng các hàng
+    D = cp.diag(D_diag)  # Tạo ma trận đường chéo từ tổng hàng
     L = D - W_sparse  # L = D - W
-    logging.info("Kich thuoc ma tran duong cheo (D):", D.shape)
-    logging.info("Kich thuoc ma tran trong so W:", W_sparse.shape)
-    logging.info("Kich thuoc ma tran Laplace (L):", L.shape)
+    logging.info("Kich thuoc ma tran duong cheo (D): %s", D.shape)
+    logging.info("Mau cua D (9 phan tu dau):\n%s", D_diag[:9])  # In phần tử trên đường chéo
+    logging.info("Kich thuoc ma tran Laplace (L): %s", L.shape)
+    logging.info("Mau cua L (9x9 phan tu dau):\n%s", L[:9, :9])
     return L, D
 
 # 3. Giai bai toan tri rieng
-def compute_eigen(L, D, k=2):
-    # Chuyen du lieu ve CPU vi eigsh chua ho tro GPU
-    L_cpu, D_cpu = L.get(), D.get()
-    vals, vecs = eigsh(L_cpu, k=k, M=D_cpu, which='SM')  # 'SM' tim tri rieng nho nhat
-    return cp.array(vecs)  # Tra ve k vector rieng (chuyen ve GPU)
+def compute_eigen(L, k=2):
+    # Tìm các trị riêng nhỏ nhất (Smallest Magnitude)
+    eigvals, eigvecs = eigsh(L, k=k, which='SA')  
+    return eigvecs
 
 # 4. Gan nhan cho tung diem anh dua tren vector rieng
 def assign_labels(eigen_vectors, k):

@@ -13,7 +13,7 @@ def extract_times_from_log(log_file):
     return times
 
 # Tên file log
-log_file = 'histogram_result_0.txt'
+log_file = '22_1_2025_GPU_HIS_COO0.txt'
 
 # Trích xuất thời gian từ file log
 times = extract_times_from_log(log_file)
