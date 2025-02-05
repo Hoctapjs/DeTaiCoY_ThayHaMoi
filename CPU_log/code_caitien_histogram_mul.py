@@ -9,15 +9,37 @@ import time
 import logging
 import os
 
-def kiemThuChayNhieuLan(i, name):
-        temp_chuoi = f"{name}{i}"
-        temp_chuoi = temp_chuoi + '.txt'
-        logging.basicConfig(filename = temp_chuoi, level=logging.INFO, 
+import os
+import logging
+
+def kiemThuChayNhieuLan(i, name, folder_path):
+    # Kiểm tra xem thư mục có tồn tại không
+    if not os.path.isdir(folder_path):
+        print(f"❌ Thư mục {folder_path} không tồn tại!")
+        return
+    
+    # Lấy danh sách tất cả ảnh trong thư mục
+    image_files = [f for f in os.listdir(folder_path) if f.lower().endswith(('.png', '.jpg', '.jpeg', '.bmp', '.gif'))]
+    
+    if not image_files:
+        print(f"❌ Không tìm thấy file ảnh nào trong {folder_path}!")
+        return
+
+    for idx, file_name in enumerate(image_files, start=1):
+        image_path = os.path.join(folder_path, file_name)
+
+        # Tạo file log riêng cho từng lần chạy
+        log_file = f"{name}_{i}_{idx}.txt"
+        
+        # Cấu hình logging
+        logging.basicConfig(filename=log_file, level=logging.INFO,
                             format='%(asctime)s - %(levelname)s - %(message)s')
-        # Duong dan toi anh cua ban
-        image_path = "rsz_banana0102.png"  # Thay bang duong dan anh cua ban
-        """ image_path = "apple4_98x100.jpg"  # Thay bang duong dan anh cua ban """
+
+        print(f"📷 Đang xử lý ảnh {idx}: {image_path}")
+        
+        # Gọi hàm xử lý ảnh
         normalized_cuts(image_path)
+
 
 def find_peaks_with_conditions(histogram, delta_threshold, dist_threshold):
     """

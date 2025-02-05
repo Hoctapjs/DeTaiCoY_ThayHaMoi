@@ -92,166 +92,93 @@ def compute_laplacian(W_sparse):
 
 
 # 3. Giai bai toan tri rieng
-# Version 1
+
+#Version 4 - không dùng eig mà code lanzcos thuần - dùng thuật toán QR
+def Lanczos(A, v, m):
+    """
+    Thuật toán Lanczos để xấp xỉ trị riêng và vector riêng.
+    : A: Ma trận cần tính (numpy 2D array).
+    : v: Vector khởi tạo.
+    : m: Số bước lặp Lanczos.
+    :return: Ma trận tam giác T và ma trận trực giao V.
+    """
+    n = len(v) # Đây là số phần tử trong vector v (số chiều của ma trận A)
+    V = np.zeros((m, n)) # đây là một ma trận mxn lưu trữ các vector trực giao (là 2 vector có tích vô hướng = 0), mỗi hàng là một bước đã đi qua, np.zeros nghĩa là ban đầu tất cả các bước đi (hay các phần tử của ma trận) đều là 0, chưa đi bước nào
+    T = np.zeros((m, m)) # đây là ma trận tam giác T
+    V[0, :] = v / np.linalg.norm(v) # np.linalg.norm(v) là để tính chuẩn (độ dài) của vector = căn(v1^2 + v2^2 + ...)
+    # => V[0, :] = v / np.linalg.norm(v) là để chuẩn hóa vector v đầu vào thành vector đơn vị 
+    
+    # Đoạn này là để làm cho w trực giao với V0 thôi
+    # vd: để làm cho 2 vector a và b trực giao với nhau
+    # 1. tính tích vô hướng của a và b (alpha)
+    # 2. cập nhật vector a lại 
+    #   a = a - alpha * b (b ở đây là V[0, :] = v / căn(v) )
+
+
+    w = A @ V[0, :] # tính vector w bằng cách nhân A với vector đầu tiên của V - hiểu nôm na là w sẽ cho ta biết các mà ma trận A tương tác với vector khởi tạo v
+    alpha = np.dot(w, V[0, :]) # .dot là tính tích vô hướng của 2 vector a và b (trong case này là w và vector đầu tiên của V), hệ số alpha là để đo mức độ song song giữa w và V0
+    w = w - alpha * V[0, :]
+    # alpha * V[0, :] tạo ra một vector có hướng song song với 
+    # V[0,:] mà có độ dài tương ứng.
+    # sau khi trừ xong thì nò sẽ loại bỏ phần song song ra khỏi w
+
+    
+    T[0, 0] = alpha # Gán giá trị alpha vào phần tử đầu tiên của T
+    
+    for j in range(1, m):
+        beta = np.linalg.norm(w)
+        if beta < 1e-10:
+            break
+        V[j, :] = w / beta
+        w = A @ V[j, :]
+        alpha = np.dot(w, V[j, :])
+        w = w - alpha * V[j, :] - beta * V[j-1, :]
+        
+        T[j, j] = alpha
+        T[j-1, j] = beta
+        T[j, j-1] = beta
+    
+    return T, V
+
+def QR_algorithm(T, max_iter=100, tol=1e-10):
+    """
+    Phương pháp QR để tính trị riêng và vector riêng của ma trận T.
+    """
+    n = T.shape[0]
+    Q_total = np.eye(n)
+    T_k = np.copy(T)
+    
+    for _ in range(max_iter):
+        Q, R = np.linalg.qr(T_k)  # Phân rã QR
+        T_k = R @ Q  # Lặp QR
+        Q_total = Q_total @ Q  # Tích lũy Q để tìm vector riêng
+        
+        # Kiểm tra hội tụ
+        if np.linalg.norm(np.triu(T_k, k=1)) < tol:
+            break
+    
+    eigvals = np.diag(T_k)  # Trị riêng là các phần tử trên đường chéo
+    eigvecs = Q_total  # Vector riêng là Q tổng hợp
+    return eigvals, eigvecs
+
 def compute_eigen(L, D, k=2):
     """
-    Giai bai toan tri rieng bang thuat toan Lanczos (eigsh) tren GPU.
-    :param L: Ma tran Laplace thua (CuPy sparse matrix).
-    :param D: Ma tran duong cheo (CuPy sparse matrix).
-    :param k: So tri rieng nho nhat can tinh.
-    :return: Cac vector rieng tuong ung (k vector).
+    Giải bài toán trị riêng bằng thuật toán Lanczos không dùng eigsh.
     """
-    # Chuan hoa ma tran Laplace: D^-1/2 * L * D^-1/2
-    D_diag = D.diagonal().copy()  # Lay duong cheo cua D
-    D_diag[D_diag < 1e-10] = 1e-10  # Tranh chia cho 0 hoac gan 0
-    D_inv_sqrt = diags(1.0 / np.sqrt(D_diag))  # Tinh D^-1/2
-    L_normalized = D_inv_sqrt @ L @ D_inv_sqrt  # Chuan hoa ma tran Laplace
-
-    # Giai bai toan tri rieng bang eigsh
-    eigvals, eigvecs = eigsh(L_normalized, k=k, which='SA')  # Dung SA thay vi SM
-
-    # Chuyen lai eigenvectors ve khong gian goc bang cach nhan D^-1/2
-    eigvecs_original = D_inv_sqrt @ eigvecs
-
+    D_diag = D.diagonal().copy()
+    D_diag[D_diag < 1e-10] = 1e-10
+    D_inv_sqrt = diags(1.0 / np.sqrt(D_diag)).toarray()
+    L_normalized = D_inv_sqrt @ L @ D_inv_sqrt
+    
+    v0 = np.random.rand(L.shape[0])
+    v0 /= np.linalg.norm(v0)
+    
+    T, V = Lanczos(L_normalized, v0, m=k+5)
+    
+    eigvals, eigvecs_T = QR_algorithm(T[:k, :k])
+    eigvecs_original = D_inv_sqrt @ (V[:k, :].T @ eigvecs_T)
+    
     return eigvecs_original
-
-# Version 2 (chạy không tối ưu và còn dài dòng khó hiểu - chưa giải thích được hết)
-# def compute_eigen(W_sparse, k=3):  
-#     """  
-#     Tính trị riêng và vector riêng bằng thuật toán Lanczos.  
-#     :param W_sparse: Ma trận trọng số dạng COO (đối xứng).  
-#     :param k: Số trị riêng nhỏ nhất cần tính.  
-#     :return: Các vector riêng tương ứng (k vector).  
-#     """  
-#     n = W_sparse.shape[0]  # Kích thước ma trận  
-
-#     # 1. Khởi tạo biến  
-#     v = np.zeros(n)  # Khởi tạo vector v  
-#     beta = 1.0  # Khởi tạo β0  
-#     k_iter = 0  # Số lần lặp k  
-#     T = np.zeros((min(k, n), min(k, n)))  # Ma trận tridiagonal T  
-#     V = np.zeros((n, min(k, n)))  # Ma trận chứa các vector Lanczos  
-#     W = W_sparse.toarray()  # Chuyển ma trận vào dạng NumPy cho tính toán  
-
-#     # 2. Gán giá trị cho vector đơn vị ban đầu  
-#     v = np.random.rand(n)  
-#     v /= np.linalg.norm(v)  
-
-#     while beta > 1e-10 and k_iter < k:  
-#         V[:, k_iter] = v  # Gán vector hiện tại vào V  
-#         w = W @ v  # Tính Av  
-
-#         if k_iter > 0:  
-#             w -= beta * V[:, k_iter - 1]  # Thực hiện phép trừ β*v_(k-1)  
-
-#         # Tính alpha = <v, w>  
-#         alpha = np.dot(v, w)  
-#         T[k_iter, k_iter] = alpha  # Gán giá trị alpha vào đường chéo của T  
-#         w -= alpha * v  # Thực hiện phép trừ alpha*v  
-
-#         # Tính beta = ||w||  
-#         beta = np.linalg.norm(w)  
-#         if beta > 1e-10:  
-#             v = w / beta  # Chuẩn hóa v  
-
-#         if k_iter < k - 1:  
-#             T[k_iter, k_iter + 1] = beta  # Gán giá trị vào đường chéo trên  
-#             T[k_iter + 1, k_iter] = beta  # Gán giá trị vào đường chéo dưới  
-
-#         k_iter += 1  
-
-#     # 3. Tính trị riêng và vector riêng từ ma trận T  
-#     eigenvalues, eigenvectors = np.linalg.eigh(T)  # Tính toán trị riêng và vector riêng  
-
-#     # 4. Chọn k trị riêng nhỏ nhất và vector riêng tương ứng  
-#     idx = np.argsort(eigenvalues)[:k]  
-#     eigenvalues = eigenvalues[idx]  
-#     eigenvectors = eigenvectors[:, idx]  
-
-#     # 5. Chuyển đổi vector riêng về không gian gốc  
-#     eigvecs_original = V[:, :k] @ eigenvectors  # Chuyển đổi về không gian gốc  
-
-#     return eigvecs_original  # Trả về vector riêng
-
-# def compute_eigen(W_sparse, k=2):
-#     """
-#     Optimized Lanczos algorithm for computing eigenvalues and eigenvectors of sparse matrices.
-#     Based on Algorithm 3.2 and 3.3 from the provided theory.
-    
-#     Args:
-#         W_sparse: Sparse symmetric weight matrix (CSR, CSC, or COO format)
-#         k: Number of smallest eigenvalues/eigenvectors to compute
-        
-#     Returns:
-#         Eigenvectors corresponding to k smallest eigenvalues
-#     """
-#     n = W_sparse.shape[0]
-    
-#     # Initialize matrices T and V
-#     T = np.zeros((k, k))  # Tridiagonal matrix
-#     V = np.zeros((n, k))  # Matrix storing Lanczos vectors
-    
-#     # Step 1: Initialize first Lanczos vector
-#     v = np.random.rand(n)
-#     v = v / np.linalg.norm(v)  # Normalize to unit vector
-#     V[:, 0] = v
-    
-#     # w will store A*v
-#     w = W_sparse @ v
-    
-#     # Initial alpha (diagonal element)
-#     alpha = np.dot(v, w)
-#     T[0, 0] = alpha
-    
-#     # Update w and compute first beta
-#     w = w - alpha * v
-#     beta = np.linalg.norm(w)
-    
-#     # Main Lanczos iteration
-#     for j in range(1, k):
-#         # Check for breakdown
-#         if abs(beta) < 1e-12:
-#             break
-            
-#         # Step 2: Update vectors
-#         v_old = v.copy()
-#         v = w / beta
-#         V[:, j] = v
-        
-#         # Compute new w = A*v
-#         w = W_sparse @ v
-        
-#         # Maintain orthogonality (full reorthogonalization)
-#         for i in range(j+1):
-#             coef = np.dot(w, V[:, i])
-#             w = w - coef * V[:, i]
-            
-#         # Update tridiagonal matrix T
-#         alpha = np.dot(v, w)
-#         T[j, j] = alpha
-#         T[j-1, j] = beta
-#         T[j, j-1] = beta
-        
-#         # Update w and compute new beta
-#         w = w - alpha * v - beta * v_old
-#         beta = np.linalg.norm(w)
-        
-#     # Solve eigenvalue problem for tridiagonal matrix
-#     eigenvalues, eigenvectors = np.linalg.eigh(T)
-    
-#     # Sort eigenvalues and corresponding eigenvectors
-#     idx = np.argsort(eigenvalues)[:k]
-#     eigenvalues = eigenvalues[idx]
-#     eigenvectors = eigenvectors[:, idx]
-    
-#     # Transform eigenvectors back to original space
-#     final_eigenvectors = V @ eigenvectors
-    
-#     # Normalize the eigenvectors
-#     for i in range(final_eigenvectors.shape[1]):
-#         final_eigenvectors[:, i] = final_eigenvectors[:, i] / np.linalg.norm(final_eigenvectors[:, i])
-    
-#     return final_eigenvectors
 
 
 # 4. Gan nhan cho tung diem anh dua tren vector rieng
