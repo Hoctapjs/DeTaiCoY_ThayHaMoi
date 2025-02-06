@@ -1,4 +1,4 @@
-import code_caitien_gpu_histogram_COO_chuanhoa as codechuan  # Import file chứa các hàm cần sử dụng
+import ncut_GPU_measure as codechuan  # Import file chứa các hàm cần sử dụng
 """ import ncut_GPU as codechuan  # Import file chứa các hàm cần sử dụng """
 
 def kiemThuChayNhieuLanMain(solan):
