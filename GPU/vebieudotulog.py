@@ -6,14 +6,17 @@ def extract_times_from_log(log_file):
     times = []  # Danh sách để lưu thời gian
     with open(log_file, 'r') as file:
         for line in file:
-            # Tìm kiếm thời gian trong dòng log
-            match = re.search(r"Thoi gian: (\d+\.\d+) giay", line)
+            # # Tìm kiếm thời gian trong dòng log
+            # match = re.search(r"Thoi gian: (\d+\.\d+) giay", line)
+
+            # Tìm kiếm thời gian đo ma trận COO chạy trong dòng log
+            match = re.search(r"Thoi gian COO: (\d+\.\d+) giay", line)
             if match:
                 times.append(float(match.group(1)))  # Thêm thời gian vào danh sách
     return times
 
 # Tên file log
-log_file = 'his_coo_chuanhoa_gpu_220125_0.txt'
+log_file = '07_02_2025_GPU_COO0.txt'
 
 # Trích xuất thời gian từ file log
 times = extract_times_from_log(log_file)
