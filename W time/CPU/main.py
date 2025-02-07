@@ -1,5 +1,5 @@
-import code_chuan_log as codechuan  # Import file chứa các hàm cần sử dụng
-""" import code_chuan_log_songsong_cpu as codechuan  # Import file chứa các hàm cần sử dụng """
+""" import code_chuan_log as codechuan  # Import file chứa các hàm cần sử dụng """
+import code_chuan_log_songsong_cpu as codechuan  # Import file chứa các hàm cần sử dụng
 # import code_caitien_histogram as codechuan  # Import file chứa các hàm cần sử dụng
 # import code_chuan_COO as codechuan  # Import file chứa các hàm cần sử dụng
 """ import testCOO_measure as codechuan  # Import file chứa các hàm cần sử dụng """

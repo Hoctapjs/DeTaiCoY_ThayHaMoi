@@ -15,8 +15,8 @@ def kiemThuChayNhieuLan(i, name):
         logging.basicConfig(filename = temp_chuoi, level=logging.INFO, 
                             format='%(asctime)s - %(levelname)s - %(message)s')
         # Duong dan toi anh cua ban
-        """ image_path = "apple3_60x60.jpg"  # Thay bang duong dan anh cua ban """
-        image_path = "apple4_98x100.jpg"  # Thay bang duong dan anh cua ban
+        image_path = "apple3_60x60.jpg"  # Thay bang duong dan anh cua ban
+        """ image_path = "apple4_98x100.jpg"  # Thay bang duong dan anh cua ban """
         normalized_cuts(image_path, k=3)
         
 
@@ -37,7 +37,13 @@ def compute_weight_matrix(image, sigma_i=0.1, sigma_x=10):
     def compute_kernel_features(i):
         return rbf_kernel([features[i]], features, gamma=1/(2 * sigma_i**2))[0]
     
-    W_features = np.array(Parallel(n_jobs=-1)(delayed(compute_kernel_features)(i) for i in range(features.shape[0])))
+    useallcore = input("bạn có muốn dùng hết các lõi có thể sử dụng của CPU không?")
+
+    if (useallcore == "y") :
+        W_features = np.array(Parallel(n_jobs=-1)(delayed(compute_kernel_features)(i) for i in range(features.shape[0])))
+    else :
+        core_number = int(input("số lượng lõi bạn muốn dùng: "))
+        W_features = np.array(Parallel(n_jobs=core_number)(delayed(compute_kernel_features)(i) for i in range(features.shape[0])))
 
     # Tinh do tuong dong ve dac trung va khong gian
     W_coords = rbf_kernel(coords, gamma=1/(2 * sigma_x**2))
