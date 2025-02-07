@@ -5,7 +5,11 @@ from scipy.sparse.linalg import eigsh
 from sklearn.cluster import KMeans
 from skimage import io, color
 import time
+from tkinter import Tk
+from tkinter.filedialog import askopenfilename
 import logging
+from scipy.sparse import coo_matrix #chuyển sang ma trận coo
+
 
 def kiemThuChayNhieuLan(i, name):
         temp_chuoi = f"{name}{i}"
@@ -13,11 +17,19 @@ def kiemThuChayNhieuLan(i, name):
         logging.basicConfig(filename = temp_chuoi, level=logging.INFO, 
                             format='%(asctime)s - %(levelname)s - %(message)s')
         # Duong dan toi anh cua ban
-        """ image_path = "apple3_60x60.jpg"  # Thay bang duong dan anh cua ban """
-        image_path = "apple4_98x100.jpg"  # Thay bang duong dan anh cua ban
+        image_path = "apple3_60x60.jpg"  # Thay bang duong dan anh cua ban
+        """ image_path = "apple4_98x100.jpg"  # Thay bang duong dan anh cua ban """
         normalized_cuts(image_path, k=3)
-        
 
+        # Mở hộp thoại chọn ảnh
+        # image_path = open_file_dialog()
+        # if image_path:
+        #     logging.info(f"Da chon anh: {image_path}")
+        #     normalized_cuts(image_path, k=3)  # Phan vung thanh 3 nhom
+        # else:
+        #     logging.info("Khong co anh nao duoc chon.")
+
+    
 
 # 1. Tinh ma tran trong so
 def compute_weight_matrix(image, sigma_i=0.1, sigma_x=10):
@@ -41,40 +53,41 @@ def compute_weight_matrix(image, sigma_i=0.1, sigma_x=10):
     logging.info(f"Mau cua W_features (9x9 phan tu dau):\n{W_features[:9, :9]}")
     logging.info(f"Mau cua W_coords (9x9 phan tu dau):\n{W_coords[:9, :9]}")
     logging.info(f"Mau cua W (9x9 phan tu dau):\n{W[:9, :9]}")
+
+    # Chuyen ma tran W sang dang ma tran thua COO
+    W_sparse = coo_matrix(W)
+    logging.info(f"Kich thuoc ma tran thua (COO): {W_sparse.shape}")
+    logging.info(f"Mau cua ma tran thua (COO) [du lieu, hang, cot]:\n{W_sparse.data[:9]}, {W_sparse.row[:9]}, {W_sparse.col[:9]}")
     
-    
-    return W
+    return W_sparse
+
+
 
 # 2. Tinh ma tran Laplace
-def compute_laplacian(W):
-    D = np.diag(W.sum(axis=1))  # Ma tran duong cheo
-    L = D - W
-    
+def compute_laplacian(W_sparse):
+    # Tạo ma trận đường chéo từ tổng các hàng
+    D_diag = W_sparse.sum(axis=1).A.flatten() 
+    D = np.diag(D_diag)  # Ma trận đường chéo
+    L = D - W_sparse # L = D - W
     logging.info("Kich thuoc ma tran duong cheo (D): %s", D.shape)
-    logging.info("Mau cua D (9x9 phan tu dau):\n%s", D[:9, :9])
+    logging.info("Mau cua D (9 phan tu dau):\n%s", D_diag[:9])  # In phần tử trên đường chéo
     logging.info("Kich thuoc ma tran Laplace (L): %s", L.shape)
     logging.info("Mau cua L (9x9 phan tu dau):\n%s", L[:9, :9])
-
-    
     return L, D
 
-# 3. Giai bai toan tri rieng
-def compute_eigen(L, D, k):
-    # Giai bai toan tri rieng tong quat
-    vals, vecs = eigsh(L, k=k, M=D, which='SM')  # 'SM' tim tri rieng nho nhat
-    
-    logging.info(f"Tri rieng (Eigenvalues): {vals}")
-    logging.info(f"Kich thuoc vector rieng: {vecs.shape}")
-    logging.info(f"Mau cua vector rieng (9 hang dau):\n{vecs[:9, :]}")
 
-    return vecs  # Tra ve k vector rieng
+# 3. Giai bai toan tri rieng
+def compute_eigen(L, D, k=2):
+    # Tìm các trị riêng nhỏ nhất (Smallest Magnitude)
+    eigvals, eigvecs = eigsh(L, k=k, which='SA')  
+    return eigvecs
+
 
 # 4. Gan nhan cho tung diem anh dua tren vector rieng
 def assign_labels(eigen_vectors, k):
     # Dung K-Means de gan nhan
     kmeans = KMeans(n_clusters=k, random_state=0).fit(eigen_vectors)
     labels = kmeans.labels_
-    
     logging.info(f"Nhan gan cho 27 pixel dau tien: {labels[:27]}")
     return labels
 
@@ -115,9 +128,13 @@ def normalized_cuts(image_path, k):
         image = image[:, :, :3]
     image = image / 255.0  # Chuan hoa ve [0, 1]
     
+    # Tính thời gian riêng cho COO matrix
+    start_cpu_coo = time.time()
     # Tinh toan Ncuts
     logging.info("Bat dau tinh ma tran trong so...")
     W = compute_weight_matrix(image)
+    end_cpu_coo = time.time()
+
     
     logging.info("Tinh ma tran Laplace...")
     L, D = compute_laplacian(W)
@@ -132,9 +149,27 @@ def normalized_cuts(image_path, k):
 
     end_cpu = time.time()
     logging.info(f"Thoi gian: {end_cpu - start_cpu} giay")
+    logging.info(f"Thoi gian COO: {end_cpu_coo - start_cpu_coo} giay")
 
     display_segmentation(image, labels, k)
 
-# 7. Chay thu nghiem
-""" if __name__ == "__main__": """
+# 7. Mo file chon anh tu hop thoai
+def open_file_dialog():
+    # Tao cua so an cho tkinter
+    root = Tk()
+    root.withdraw()  # An cua so chinh
+    
+    # Mo hop thoai chon file anh
+    file_path = askopenfilename(title="Chon anh", filetypes=[("Image Files", "*.jpg;*.jpeg;*.png;*.bmp")])
+    return file_path   
+
+# 8. Chay thu nghiem
+if __name__ == "__main__":
+    # Mo hop thoai chon anh
+    image_path = open_file_dialog()
+    if image_path:
+        logging.info(f"Da chon anh: {image_path}")
+        normalized_cuts(image_path, k=3)  # Phan vung thanh 3 nhom
+    else:
+        logging.info("Khong co anh nao duoc chon.")
 

@@ -8,12 +8,14 @@ def extract_times_from_log(log_file):
         for line in file:
             # Tìm kiếm thời gian trong dòng log
             match = re.search(r"Thoi gian: (\d+\.\d+) giay", line)
+            """ match = re.search(r"Thoi gian COO: (\d+\.\d+) giay", line) """
+
             if match:
                 times.append(float(match.group(1)))  # Thêm thời gian vào danh sách
     return times
 
 # Tên file log
-log_file = 'logdonapple40.txt'
+log_file = 'his_coo_chuanhoa_gpu_220125_0.txt'
 
 # Trích xuất thời gian từ file log
 times = extract_times_from_log(log_file)

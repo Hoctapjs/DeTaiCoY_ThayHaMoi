@@ -116,8 +116,10 @@ def normalized_cuts(image_path, k):
     image = image / 255.0  # Chuan hoa ve [0, 1]
     
     # Tinh toan Ncuts
+    start_cpu_coo = time.time()
     logging.info("Bat dau tinh ma tran trong so...")
     W = compute_weight_matrix(image)
+    end_cpu_coo = time.time()
     
     logging.info("Tinh ma tran Laplace...")
     L, D = compute_laplacian(W)
@@ -132,6 +134,7 @@ def normalized_cuts(image_path, k):
 
     end_cpu = time.time()
     logging.info(f"Thoi gian: {end_cpu - start_cpu} giay")
+    logging.info(f"Thoi gian COO: {end_cpu_coo - start_cpu_coo} giay")
 
     display_segmentation(image, labels, k)
 

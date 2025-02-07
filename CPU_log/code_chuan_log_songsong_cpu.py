@@ -6,6 +6,8 @@ from sklearn.cluster import KMeans
 from skimage import io, color
 import time
 import logging
+from joblib import Parallel, delayed
+
 
 def kiemThuChayNhieuLan(i, name):
         temp_chuoi = f"{name}{i}"
@@ -31,8 +33,13 @@ def compute_weight_matrix(image, sigma_i=0.1, sigma_x=10):
     logging.info(f"Toa do:\n{coords[:9, :9]}")
 
     
+    # Tính toán song song RBF kernel
+    def compute_kernel_features(i):
+        return rbf_kernel([features[i]], features, gamma=1/(2 * sigma_i**2))[0]
+    
+    W_features = np.array(Parallel(n_jobs=-1)(delayed(compute_kernel_features)(i) for i in range(features.shape[0])))
+
     # Tinh do tuong dong ve dac trung va khong gian
-    W_features = rbf_kernel(features, gamma=1/(2 * sigma_i**2))
     W_coords = rbf_kernel(coords, gamma=1/(2 * sigma_x**2))
     W = W_features * W_coords
     
