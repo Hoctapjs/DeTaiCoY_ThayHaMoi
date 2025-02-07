@@ -6,6 +6,7 @@ from sklearn.cluster import KMeans
 from skimage import io, color
 import cupyx.scipy.sparse as sp
 from cupyx.scipy.sparse.linalg import eigsh
+from cupyx.scipy.sparse import diags
 import time
 from tkinter import Tk
 from tkinter.filedialog import askopenfilename
@@ -79,10 +80,91 @@ def compute_laplacian(W_sparse):
     return L, D
 
 # 3. Giai bai toan tri rieng
+# def lanczos_method(L, k, max_iter=100, tol=1e-6):
+#     """
+#     Triển khai thuật toán Lanczos để tìm trị riêng nhỏ nhất của ma trận L.
+    
+#     Args:
+#         L (cupy.ndarray): Ma trận đối xứng cần tìm trị riêng.
+#         k (int): Số trị riêng nhỏ nhất cần tìm.
+#         max_iter (int): Số vòng lặp tối đa.
+#         tol (float): Ngưỡng hội tụ.
+
+#     Returns:
+#         eigvals (cupy.ndarray): k trị riêng nhỏ nhất.
+#         eigvecs (cupy.ndarray): k vector riêng tương ứng.
+#     """
+#     n = L.shape[0]
+#     V = cp.zeros((n, k + 1), dtype=cp.float32)  # Ma trận chứa các vector trực chuẩn
+#     T = cp.zeros((k, k), dtype=cp.float32)  # Ma trận tam trục
+    
+#     # Khởi tạo v0 ngẫu nhiên và chuẩn hóa
+#     v0 = cp.random.randn(n).astype(cp.float32)
+#     v0 /= cp.linalg.norm(v0)
+#     V[:, 0] = v0
+    
+#     beta = 0
+#     v_prev = cp.zeros(n, dtype=cp.float32)  # Vector trước đó
+
+#     for j in range(min(k, max_iter)):
+#         w = L @ V[:, j]  # Nhân ma trận
+#         alpha = V[:, j] @ w  # Hệ số chéo chính
+#         w -= alpha * V[:, j] + beta * v_prev  # Loại bỏ thành phần trước đó
+        
+#         beta = cp.linalg.norm(w)  # Hệ số dưới đường chéo
+#         if beta < tol:
+#             break  # Hội tụ
+        
+#         V[:, j + 1] = w / beta  # Chuẩn hóa
+#         v_prev = V[:, j]  # Lưu lại vector trước
+#         T[j, j] = alpha
+#         if j < k - 1:
+#             T[j, j + 1] = beta
+#             T[j + 1, j] = beta
+
+#     # Tính trị riêng của ma trận tam trục T
+#     eigvals, eigvecs_T = cp.linalg.eigh(T[:j+1, :j+1])  # Chỉ lấy ma trận kích thước thực sự dùng
+    
+#     # Chuyển đổi vector riêng từ T_k về không gian gốc
+#     eigvecs = V[:, :j+1] @ eigvecs_T[:, :k]
+    
+#     return eigvals[:k], eigvecs[:, :k]
+
+
+# def compute_eigen(L, k=2):
+#     eigenvalues, eigenvectors = lanczos_method(L, k)
+#     return eigenvectors
+
+# def compute_eigen(L, D, k=2):
+#     """
+#     Giai bai toan tri rieng bang thuat toan Lanczos (eigsh) tren GPU.
+#     :param L: Ma tran Laplace thua (CuPy sparse matrix).
+#     :param D: Ma tran duong cheo (CuPy sparse matrix).
+#     :param k: So tri rieng nho nhat can tinh.
+#     :return: Cac vector rieng tuong ung (k vector).
+#     """
+#     # Chuan hoa ma tran Laplace: D^-1/2 * L * D^-1/2
+#     D_diag = D.diagonal().copy()  # Lay duong cheo cua D
+#     D_diag[D_diag < 1e-10] = 1e-10  # Trahn chia cho 0 hoac gan 0
+#     D_inv_sqrt = diags(1.0 / cp.sqrt(D_diag))  # Tinh D^-1/2
+#     L_normalized = D_inv_sqrt @ L @ D_inv_sqrt  # Chuan hoa ma tran Laplace
+
+#     # Giai bai toan tri rieng bang eigsh
+#     eigenvalues, eigenvectors = lanczos_method(L_normalized, k, max_iter=50)
+
+#     # Chuyen lai eigenvectors ve khong gian goc bang cach nhan D^-1/2
+#     eigvecs_original = D_inv_sqrt @ eigenvectors
+
+#     return eigvecs_original
+
 def compute_eigen(L, k=2):
     # Tìm các trị riêng nhỏ nhất (Smallest Magnitude)
     eigvals, eigvecs = eigsh(L, k=k, which='SA')  
     return eigvecs
+
+
+
+
 
 # 4. Gan nhan cho tung diem anh duoc dua tren vector rieng
 def assign_labels(eigen_vectors, k):
@@ -146,7 +228,7 @@ def normalized_cuts(image_path, k=2):
     L, D = compute_laplacian(W_sparse)
     
     logging.info("Tinh eigenvectors...")
-    eigen_vectors = compute_eigen(L, k=k)  # Tinh k vector rieng
+    eigen_vectors = compute_eigen(L,D, k=k)  # Tinh k vector rieng
     
     logging.info("Phan vung do thi...")
     labels = assign_labels(eigen_vectors, k)  # Gan nhan cho moi diem anh
