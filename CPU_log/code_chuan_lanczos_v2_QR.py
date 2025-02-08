@@ -21,7 +21,8 @@ def kiemThuChayNhieuLan(i, name):
         logging.basicConfig(filename = temp_chuoi, level=logging.INFO, 
                             format='%(asctime)s - %(levelname)s - %(message)s')
         # Duong dan toi anh cua ban
-        image_path = "apple3_60x60.jpg"  # Thay bang duong dan anh cua ban
+        # image_path = "apple3_60x60.jpg"  # Thay bang duong dan anh cua ban
+        image_path = "rsz_banana0102.png"  # Thay bang duong dan anh cua ban
         """ image_path = "apple4_98x100.jpg"  # Thay bang duong dan anh cua ban """
         normalized_cuts(image_path, k=3)
         
@@ -143,21 +144,25 @@ def Lanczos(A, v, m):
 def QR_algorithm(T, max_iter=100, tol=1e-10):
     """
     Phương pháp QR để tính trị riêng và vector riêng của ma trận T.
+
+    * T: là ma trận tam giác nhận được từ hàm lanczos ở trên
+    * max_iter=100: là số lần lặp tối đa, QR thì thường cần nhiều lần lặp để có thể hội tụ đến các trị riêng và vector riêng chính xác
+    * tol=1e-10: ngưỡng hội tụ, đại diện cho độ chính xác của kết quả cuối cùng
     """
-    n = T.shape[0]
-    Q_total = np.eye(n)
-    T_k = np.copy(T)
+    n = T.shape[0] # Kích thước ma trận T (số hàng hoặc số cột vì T là ma trận vuông)
+    Q_total = np.eye(n) # Khởi tạo ma trận đơn vị cỡ n×n để lưu tích các ma trận Q
+    T_k = np.copy(T) # Sao chép T để giữ nguyên giá trị đầu vào
     
-    for _ in range(max_iter):
-        Q, R = np.linalg.qr(T_k)  # Phân rã QR
-        T_k = R @ Q  # Lặp QR
-        Q_total = Q_total @ Q  # Tích lũy Q để tìm vector riêng
+    for _ in range(max_iter): # Lặp lại quá trình phân rã QR để làm cho T dần hội tụ về ma trận đường chéo (chứa trị riêng)
+        Q, R = np.linalg.qr(T_k)  # Phân rã T_k thành QR, Q là ma trận trực giao còn R là ma trận tam giác trên 
+        T_k = R @ Q  # Lặp QR - cập nhật lại T_k => T_k DẦN TRỞ THÀNH MA TRẬN ĐƯỜNG CHÉO CHỨA CÁC TRỊ RIÊNG
+        Q_total = Q_total @ Q  # Tích lũy Q để tìm vector riêng (tính tích tất cả ma trận Q từ các lần phân rã) => DẦN TRỞ THÀNH MA TRẬN CHỨA CÁC VECTOR RIÊNG
         
         # Kiểm tra hội tụ
-        if np.linalg.norm(np.triu(T_k, k=1)) < tol:
+        if np.linalg.norm(np.triu(T_k, k=1)) < tol: # ở đây triu là hàm giúp mình lấy phần trên của một đường chéo được chỉ định (bao gồm cả đường chéo đó) (chi tiết ví dụ sider 7/2)
             break
     
-    eigvals = np.diag(T_k)  # Trị riêng là các phần tử trên đường chéo
+    eigvals = np.diag(T_k)  # Trị riêng là các phần tử trên đường chéo - lấy tất cả các phần tử trên đường chéo chính của ma trận T_k và lưu chúng vào biến eigvals
     eigvecs = Q_total  # Vector riêng là Q tổng hợp
     return eigvals, eigvecs
 
@@ -170,10 +175,10 @@ def compute_eigen(L, D, k=2):
     D_inv_sqrt = diags(1.0 / np.sqrt(D_diag)).toarray()
     L_normalized = D_inv_sqrt @ L @ D_inv_sqrt
     
-    v0 = np.random.rand(L.shape[0])
-    v0 /= np.linalg.norm(v0)
+    v0 = np.random.rand(L.shape[0]) # Sinh ngẫu nhiên một vector có cùng kích thước với L
+    v0 /= np.linalg.norm(v0) # Chuẩn hóa v0 về chuẩn Euclid (độ dài 1) - (linalg.norm thì để tính chuẩn độ dài sau đó lấy v0 chia cho chuẩn đó là ta có được vector đơn vị)
     
-    T, V = Lanczos(L_normalized, v0, m=k+5)
+    T, V = Lanczos(L_normalized, v0, m=k+5) # với k là số trị riêng cần tìm, +5: Đệm thêm vài giá trị để tăng độ chính xác
     
     eigvals, eigvecs_T = QR_algorithm(T[:k, :k])
     eigvecs_original = D_inv_sqrt @ (V[:k, :].T @ eigvecs_T)

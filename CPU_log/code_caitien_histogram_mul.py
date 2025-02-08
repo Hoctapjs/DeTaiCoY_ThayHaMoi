@@ -9,8 +9,6 @@ import time
 import logging
 import os
 
-import os
-import logging
 
 def kiemThuChayNhieuLan(i, name, folder_path):
     # Kiểm tra xem thư mục có tồn tại không
@@ -19,7 +17,7 @@ def kiemThuChayNhieuLan(i, name, folder_path):
         return
     
     # Lấy danh sách tất cả ảnh trong thư mục
-    image_files = [f for f in os.listdir(folder_path) if f.lower().endswith(('.png', '.jpg', '.jpeg', '.bmp', '.gif'))]
+    image_files = [f for f in os.listdir(folder_path) if f.lower().endswith(('.png', '.jpg', '.jpeg'))]
     
     if not image_files:
         print(f"❌ Không tìm thấy file ảnh nào trong {folder_path}!")
