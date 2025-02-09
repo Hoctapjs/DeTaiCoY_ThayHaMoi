@@ -77,18 +77,40 @@ def compute_weight_matrix(image, sigma_i=0.1, sigma_x=10):
 
 # 2. Tinh ma tran Laplace
 
-def compute_laplacian(W_sparse):
-    with stream_L:
-        # Tổng của các hàng trong ma trận W
-        D_diag = W_sparse.sum(axis=1).flatten()  # Tính tổng các hàng
-        D = cp.diag(D_diag)  # Tạo ma trận đường chéo từ tổng hàng
-        L = D - W_sparse  # L = D - W
-        logging.info("Kich thuoc ma tran duong cheo (D): %s", D.shape)
-        logging.info("Mau cua D (9 phan tu dau):\n%s", D_diag[:9])  # In phần tử trên đường chéo
-        logging.info("Kich thuoc ma tran Laplace (L): %s", L.shape)
-        logging.info("Mau cua L (9x9 phan tu dau):\n%s", L[:9, :9])
-    return L, D
+# def compute_laplacian(W_sparse):
+#     with stream_L:
+#         # Tổng của các hàng trong ma trận W
+#         D_diag = W_sparse.sum(axis=1).flatten()  # Tính tổng các hàng
+#         D = cp.diag(D_diag)  # Tạo ma trận đường chéo từ tổng hàng
+#         L = D - W_sparse  # L = D - W
+#         logging.info("Kich thuoc ma tran duong cheo (D): %s", D.shape)
+#         logging.info("Mau cua D (9 phan tu dau):\n%s", D_diag[:9])  # In phần tử trên đường chéo
+#         logging.info("Kich thuoc ma tran Laplace (L): %s", L.shape)
+#         logging.info("Mau cua L (9x9 phan tu dau):\n%s", L[:9, :9])
+#     return L, D
 
+
+def compute_laplacian(W_sparse):
+    stream_D_diag = cp.cuda.stream.Stream(non_blocking=True)
+    stream_D = cp.cuda.stream.Stream(non_blocking=True)
+    stream_L = cp.cuda.stream.Stream(non_blocking=True)
+
+    # Tính D_diag trước trên một stream riêng
+    with stream_D_diag:
+        D_diag = W_sparse.sum(axis=1).flatten()
+
+    # Đồng bộ hóa trước khi sử dụng D_diag
+    stream_D_diag.synchronize()
+
+    # Tạo D và L song song
+    with stream_D:
+        D = cp.diag(D_diag)  
+
+    with stream_L:
+        L = -W_sparse  # Bắt đầu tính L sớm hơn
+
+    cp.cuda.Device(0).synchronize()
+    return L + D, D  # Thay vì L = D - W_sparse, ta trả về L + D
 
 
 # 3. Giai bai toan tri rieng
@@ -190,7 +212,6 @@ def display_segmentation(image, labels, k):
 #     display_segmentation(image, labels, k)
 
 def normalized_cuts(image_path, k=2):
-    # Đọc ảnh và tiền xử lý
     image = io.imread(image_path)
     if image.ndim == 2:
         image = color.gray2rgb(image)
@@ -200,7 +221,7 @@ def normalized_cuts(image_path, k=2):
 
     start_time = time.time()
 
-    # Chạy song song trên GPU
+
     with stream_W:
         W_sparse = compute_weight_matrix(image)
 
@@ -210,17 +231,14 @@ def normalized_cuts(image_path, k=2):
     with stream_Eigen:
         eigen_vectors = compute_eigen(L, k)
 
-    # Đồng bộ hóa GPU trước khi chuyển sang CPU
     cp.cuda.Device(0).synchronize()
 
-    #Chạy KMeans trên CPU
     labels = assign_labels(eigen_vectors, k)
-
-    # Hiển thị kết quả
     display_segmentation(image, labels, k)
 
     end_time = time.time()
     logging.info(f"Thoi gian: {end_time - start_time} giay")
+
     
 # 7. Mo file chon anh tu hop thoai
 def open_file_dialog():

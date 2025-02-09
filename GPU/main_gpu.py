@@ -1,4 +1,4 @@
-import ncut_GPU_mul as codechuan  # Import file chứa các hàm cần sử dụng
+import ncut_GPU_mul_ver2 as codechuan  # Import file chứa các hàm cần sử dụng
 """ import ncut_GPU as codechuan  # Import file chứa các hàm cần sử dụng """
 
 def kiemThuChayNhieuLanMain(solan):

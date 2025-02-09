@@ -10,7 +10,7 @@ import code_caitien_histogram_mul as codechuan  # Import file chứa các hàm c
 import os
 
 # Đường dẫn tương đối đến một tệp
-relative_path = "CPU_log\image_data"
+relative_path = "CPU_log\image_data_60"
 
 # Chuyển đổi thành đường dẫn tuyệt đối
 absolute_path = os.path.abspath(relative_path)
@@ -19,7 +19,7 @@ def kiemThuChayNhieuLanMain(solan):
     chuoi = input("Nhập vào tên file log: ")
     # folder_path = input("Nhập vào đường dẫn thư mục chứa ảnh: ")
     # Đường dẫn tương đối đến một tệp
-    relative_path = "image_data"
+    relative_path = "image_data_60"
 
     # Chuyển đổi thành đường dẫn tuyệt đối
     absolute_path = os.path.abspath(relative_path)
