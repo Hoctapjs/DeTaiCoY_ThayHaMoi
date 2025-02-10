@@ -209,36 +209,34 @@ def determine_max_k(image, sigma_i=0.1, sigma_x=10):
     return max(2, max_k)
 
 def compute_weight_matrix(image, sigma_i=0.1, sigma_x=10):
-    """Tính toán ma trận trọng số W sử dụng CuPy và CUDA Streams."""
-    
     h, w, c = image.shape
-    
-    # Tạo tọa độ điểm ảnh
-    coords = cp.array(cp.meshgrid(cp.arange(h), cp.arange(w))).reshape(2, -1).T
-    features = image.reshape(-1, c)
+    coords = cp.array(cp.meshgrid(cp.arange(h), cp.arange(w))).reshape(2, -1).T  # Tọa độ (x, y)
+    features = image.reshape(-1, c)  # Đặc trưng màu
 
-    # Khởi tạo CUDA Streams
-    stream1 = cp.cuda.Stream(non_blocking=True)
-    stream2 = cp.cuda.Stream(non_blocking=True)
+    # logging.info(f"Kich thuoc anh: {h}x{w}x{c}")
+    # logging.info(f"Kich thuoc dac trung mau: {features.shape}, Kich thuoc toa do: {coords.shape}")
+    # logging.info(f"Dac trung mau:\n{features[:9, :9]}")
+    # logging.info(f"Toa do:\n{coords[:9, :9]}")
 
-    # Tính toán W_features và W_coords song song
-    with stream1:
-        W_features = rbf_kernel(cp.asnumpy(features), gamma=1/(2 * sigma_i**2))
-        W_features = cp.asarray(W_features)
+    # Tính độ tương đồng về đặc trưng và không gian
+    W_features = rbf_kernel(cp.asnumpy(features), gamma=1/(2 * sigma_i**2))  # Chuyển dữ liệu từ GPU sang CPU
+    W_coords = rbf_kernel(cp.asnumpy(coords), gamma=1/(2 * sigma_x**2))  # Chuyển dữ liệu từ GPU sang CPU
 
-    with stream2:
-        W_coords = rbf_kernel(cp.asnumpy(coords), gamma=1/(2 * sigma_x**2))
-        W_coords = cp.asarray(W_coords)
+    # Chuyển kết quả từ NumPy (CPU) sang CuPy (GPU)
+    W_features = cp.asarray(W_features)
+    W_coords = cp.asarray(W_coords)
 
-    # Đồng bộ hóa Streams
-    stream1.synchronize()
-    stream2.synchronize()
+    W = cp.multiply(W_features, W_coords)  # Phép nhân phần tử của ma trận trên GPU
 
-    # Nhân ma trận để tạo W
-    W = cp.multiply(W_features, W_coords)
-
-    # Chuyển sang dạng ma trận thưa (sparse matrix)
+    # Chuyển thành ma trận thưa dạng COO
     W_sparse = coo_matrix(W)
+
+    # logging.info(f"Kich thuoc ma tran trong so (W): {W.shape}")
+    # logging.info(f"Kich thuoc ma tran thua (W_sparse): {W_sparse.shape}")
+    # logging.info(f"So luong phan tu khac 0: {W_sparse.nnz}")
+    # logging.info(f"Mau cua W_features (9x9 phan tu dau):\n{W_features[:9, :9]}")
+    # logging.info(f"Mau cua W_coords (9x9 phan tu dau):\n{W_coords[:9, :9]}")
+    # logging.info(f"Mau cua W (9x9 phan tu dau):\n{W[:9, :9]}")
 
     return W_sparse
 
