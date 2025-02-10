@@ -16,11 +16,6 @@ import threading
 
 
 
-# Khai báo các luồng CUDA
-stream_W = cp.cuda.stream.Stream(non_blocking=True)
-stream_L = cp.cuda.stream.Stream(non_blocking=True)
-stream_Eigen = cp.cuda.stream.Stream(non_blocking=True)
-
 
 def kiemThuChayNhieuLan(i, name):
         temp_chuoi = f"{name}{i}"
@@ -43,81 +38,59 @@ def kiemThuChayNhieuLan(i, name):
 
 # 1. Tinh ma tran trong so
 def compute_weight_matrix(image, sigma_i=0.1, sigma_x=10):
-    with stream_W: # Chạy trên luồng riêng biệt
-        h, w, c = image.shape
-        coords = cp.array(cp.meshgrid(cp.arange(h), cp.arange(w))).reshape(2, -1).T  # Tọa độ (x, y)
-        features = image.reshape(-1, c)  # Đặc trưng màu
+    """Tính toán ma trận trọng số W sử dụng CuPy và CUDA Streams."""
+    
+    h, w, c = image.shape
+    
+    # Tạo tọa độ điểm ảnh
+    coords = cp.array(cp.meshgrid(cp.arange(h), cp.arange(w))).reshape(2, -1).T
+    features = image.reshape(-1, c)
 
-        logging.info(f"Kich thuoc anh: {h}x{w}x{c}")
-        logging.info(f"Kich thuoc dac trung mau: {features.shape}, Kich thuoc toa do: {coords.shape}")
-        logging.info(f"Dac trung mau:\n{features[:9, :9]}")
-        logging.info(f"Toa do:\n{coords[:9, :9]}")
+    # Khởi tạo CUDA Streams
+    stream1 = cp.cuda.Stream(non_blocking=True)
+    stream2 = cp.cuda.Stream(non_blocking=True)
 
-        # Tính độ tương đồng về đặc trưng và không gian
-        W_features = rbf_kernel(cp.asnumpy(features), gamma=1/(2 * sigma_i**2))  # Chuyển dữ liệu từ GPU sang CPU
-        W_coords = rbf_kernel(cp.asnumpy(coords), gamma=1/(2 * sigma_x**2))  # Chuyển dữ liệu từ GPU sang CPU
-
-        # Chuyển kết quả từ NumPy (CPU) sang CuPy (GPU)
+    # Tính toán W_features và W_coords song song
+    with stream1:
+        W_features = rbf_kernel(cp.asnumpy(features), gamma=1/(2 * sigma_i**2))
         W_features = cp.asarray(W_features)
+
+    with stream2:
+        W_coords = rbf_kernel(cp.asnumpy(coords), gamma=1/(2 * sigma_x**2))
         W_coords = cp.asarray(W_coords)
 
-        W = cp.multiply(W_features, W_coords)  # Phép nhân phần tử của ma trận trên GPU
+    # Đồng bộ hóa Streams
+    stream1.synchronize()
+    stream2.synchronize()
 
-        # Chuyển thành ma trận thưa dạng COO
-        W_sparse = coo_matrix(W)
+    # Nhân ma trận để tạo W
+    W = cp.multiply(W_features, W_coords)
 
-        logging.info(f"Kich thuoc ma tran trong so (W): {W.shape}")
-        logging.info(f"Kich thuoc ma tran thua (W_sparse): {W_sparse.shape}")
-        logging.info(f"So luong phan tu khac 0: {W_sparse.nnz}")
-        logging.info(f"Mau cua W_features (9x9 phan tu dau):\n{W_features[:9, :9]}")
-        logging.info(f"Mau cua W_coords (9x9 phan tu dau):\n{W_coords[:9, :9]}")
-        logging.info(f"Mau cua W (9x9 phan tu dau):\n{W[:9, :9]}")
+    # Chuyển sang dạng ma trận thưa (sparse matrix)
+    W_sparse = coo_matrix(W)
+
     return W_sparse
-
 
 # 2. Tinh ma tran Laplace
 
-# def compute_laplacian(W_sparse):
-#     with stream_L:
-#         # Tổng của các hàng trong ma trận W
-#         D_diag = W_sparse.sum(axis=1).flatten()  # Tính tổng các hàng
-#         D = cp.diag(D_diag)  # Tạo ma trận đường chéo từ tổng hàng
-#         L = D - W_sparse  # L = D - W
-#         logging.info("Kich thuoc ma tran duong cheo (D): %s", D.shape)
-#         logging.info("Mau cua D (9 phan tu dau):\n%s", D_diag[:9])  # In phần tử trên đường chéo
-#         logging.info("Kich thuoc ma tran Laplace (L): %s", L.shape)
-#         logging.info("Mau cua L (9x9 phan tu dau):\n%s", L[:9, :9])
-#     return L, D
-
-
 def compute_laplacian(W_sparse):
-    stream_D_diag = cp.cuda.stream.Stream(non_blocking=True)
-    stream_D = cp.cuda.stream.Stream(non_blocking=True)
-    stream_L = cp.cuda.stream.Stream(non_blocking=True)
+    # Tổng của các hàng trong ma trận W
+    D_diag = W_sparse.sum(axis=1).flatten()  # Tính tổng các hàng
+    D = cp.diag(D_diag)  # Tạo ma trận đường chéo từ tổng hàng
+    L = D - W_sparse  # L = D - W
+    logging.info("Kich thuoc ma tran duong cheo (D): %s", D.shape)
+    logging.info("Mau cua D (9 phan tu dau):\n%s", D_diag[:9])  # In phần tử trên đường chéo
+    logging.info("Kich thuoc ma tran Laplace (L): %s", L.shape)
+    logging.info("Mau cua L (9x9 phan tu dau):\n%s", L[:9, :9])
+    return L, D
 
-    # Tính D_diag trước trên một stream riêng
-    with stream_D_diag:
-        D_diag = W_sparse.sum(axis=1).flatten()
-
-    # Đồng bộ hóa trước khi sử dụng D_diag
-    stream_D_diag.synchronize()
-
-    # Tạo D và L song song
-    with stream_D:
-        D = cp.diag(D_diag)  
-
-    with stream_L:
-        L = -W_sparse  # Bắt đầu tính L sớm hơn
-
-    cp.cuda.Device(0).synchronize()
-    return L + D, D  # Thay vì L = D - W_sparse, ta trả về L + D
 
 
 # 3. Giai bai toan tri rieng
 def compute_eigen(L, k=2):
-    with stream_Eigen:
-        # Tìm các trị riêng nhỏ nhất (Smallest Magnitude)
-        eigvals, eigvecs = eigsh(L, k=k, which='SA')  
+    
+    # Tìm các trị riêng nhỏ nhất (Smallest Magnitude)
+    eigvals, eigvecs = eigsh(L, k=k, which='SA')  
     return eigvecs
 
 
@@ -161,83 +134,55 @@ def display_segmentation(image, labels, k):
     plt.show()
 
 # 6. Ket hop toan bo
-# def normalized_cuts(image_path, k=2):
-#     # Tinh tong tren GPU
-#     # start_gpu = time.time()
-#     # Doc anh va chuan hoa
-#     image = io.imread(image_path)
-#     if image.ndim == 2:  # Neu la anh xam, chuyen thanh RGB
-#         image = color.gray2rgb(image)
-#     elif image.shape[2] == 4:  # Neu la anh RGBA, loai bo kenh alpha
-#         image = image[:, :, :3]
-#     image = image / 255.0  # Chuan hoa ve [0, 1]
-    
-
-#     # Tính thời gian riêng cho COO matrix
-#     start_cpu_coo = time.time()
-#     start_W = time.time()
-#     # Tinh toan Ncuts
-#     logging.info("Tinh ma tran trong so...")
-#     W_sparse = compute_weight_matrix(image)  # Ma trận W ở dạng thưa
-#     end_cpu_coo = time.time()
-#     end_W = time.time()
-    
-#     logging.info("Tinh Laplace...")
-#     start_L = time.time()
-#     L, D = compute_laplacian(W_sparse)
-#     end_L = time.time()
-    
-#     logging.info("Tinh eigenvectors...")
-#     start_Eigen = time.time()
-#     eigen_vectors = compute_eigen(L, k=k)  # Tinh k vector rieng
-#     end_Eigen = time.time()
-
-#     logging.info("Phan vung do thi...")
-#     labels = assign_labels(eigen_vectors, k)  # Gan nhan cho moi diem anh
-    
-#     logging.info("Hien thi ket qua...")
-
-#     # Đồng bộ hóa tất cả các luồng GPU trước khi hiển thị kết quả
-#     cp.cuda.Device(0).synchronize()
-#     # end_gpu = time.time()
-#     # logging.info(f"Thoi gian: {end_gpu - start_gpu} giay")
-#     logging.info(f"Thoi gian COO: {end_cpu_coo - start_cpu_coo} giay")
-
-#     total_time = end_Eigen - start_W
-#     logging.info(f"Time W: {end_W - start_W} s")
-#     logging.info(f"Time L: {end_L - start_L} s")
-#     logging.info(f"Time Eigen: {end_Eigen - start_Eigen} s")
-#     logging.info(f"Total Time: {total_time} s")
-
-#     display_segmentation(image, labels, k)
-
 def normalized_cuts(image_path, k=2):
+    # Tinh tong tren GPU
+    # start_gpu = time.time()
+    # Doc anh va chuan hoa
     image = io.imread(image_path)
-    if image.ndim == 2:
+    if image.ndim == 2:  # Neu la anh xam, chuyen thanh RGB
         image = color.gray2rgb(image)
-    elif image.shape[2] == 4:
+    elif image.shape[2] == 4:  # Neu la anh RGBA, loai bo kenh alpha
         image = image[:, :, :3]
-    image = image / 255.0  # Chuẩn hóa
+    image = image / 255.0  # Chuan hoa ve [0, 1]
+    
 
-    start_time = time.time()
+    # Tính thời gian riêng cho COO matrix
+    start_cpu_coo = time.time()
+    start_W = time.time()
+    # Tinh toan Ncuts
+    logging.info("Tinh ma tran trong so...")
+    W_sparse = compute_weight_matrix(image)  # Ma trận W ở dạng thưa
+    end_cpu_coo = time.time()
+    end_W = time.time()
+    
+    logging.info("Tinh Laplace...")
+    start_L = time.time()
+    L, D = compute_laplacian(W_sparse)
+    end_L = time.time()
+    
+    logging.info("Tinh eigenvectors...")
+    start_Eigen = time.time()
+    eigen_vectors = compute_eigen(L, k=k)  # Tinh k vector rieng
+    end_Eigen = time.time()
 
+    logging.info("Phan vung do thi...")
+    labels = assign_labels(eigen_vectors, k)  # Gan nhan cho moi diem anh
+    
+    logging.info("Hien thi ket qua...")
 
-    with stream_W:
-        W_sparse = compute_weight_matrix(image)
-
-    with stream_L:
-        L, D = compute_laplacian(W_sparse)
-
-    with stream_Eigen:
-        eigen_vectors = compute_eigen(L, k)
-
+    # Đồng bộ hóa tất cả các luồng GPU trước khi hiển thị kết quả
     cp.cuda.Device(0).synchronize()
+    # end_gpu = time.time()
+    # logging.info(f"Thoi gian: {end_gpu - start_gpu} giay")
+    logging.info(f"Thoi gian COO: {end_cpu_coo - start_cpu_coo} giay")
 
-    labels = assign_labels(eigen_vectors, k)
+    total_time = end_Eigen - start_W
+    logging.info(f"Time W: {end_W - start_W} s")
+    logging.info(f"Time L: {end_L - start_L} s")
+    logging.info(f"Time Eigen: {end_Eigen - start_Eigen} s")
+    logging.info(f"Total Time: {total_time} s")
+
     display_segmentation(image, labels, k)
-
-    end_time = time.time()
-    logging.info(f"Thoi gian: {end_time - start_time} giay")
 
     
 # 7. Mo file chon anh tu hop thoai
