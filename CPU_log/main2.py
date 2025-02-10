@@ -6,7 +6,9 @@
 # import code_chuan_lanczos_v2_QR as codechuan  # Import file chứa các hàm cần sử dụng
 # import code_chuan_COO_His as codechuan  # Import file chứa các hàm cần sử dụng
 # import code_chuan_coo_his_chuanhoa as codechuan  # Import file chứa các hàm cần sử dụng
-import code_caitien_histogram_mul as codechuan  # Import file chứa các hàm cần sử dụng
+# import code_caitien_histogram_mul as codechuan  # Import file chứa các hàm cần sử dụng
+import testCOO_measure as codechuan  # Import file chứa các hàm cần sử dụng
+
 import os
 
 # Đường dẫn tương đối đến một tệp
@@ -31,3 +33,6 @@ def kiemThuChayNhieuLanMain(solan):
 if __name__ == "__main__":
     solan = int(input("Nhập số lần kiểm thử: "))
     kiemThuChayNhieuLanMain(solan)
+
+
+    
