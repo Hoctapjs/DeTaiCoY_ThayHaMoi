@@ -219,11 +219,11 @@ def normalized_cuts(image_path):
     print(f"Optimal k determined: {k}")
 
     # Tính toán ma trận trọng số và Laplacian
-    start_cpu_coo = time.time()
+    start_cpu_w = time.time()
 
     print("Computing weight matrix...")
     W = compute_weight_matrix(image)
-    end_cpu_coo = time.time()
+    end_cpu_w = time.time()
     
     print("Computing Laplacian matrix...")
     L, D = compute_laplacian(W)
@@ -241,7 +241,7 @@ def normalized_cuts(image_path):
 
     end_cpu = time.time()
     logging.info(f"Thoi gian: {end_cpu - start_cpu} giay")
-    logging.info(f"Thoi gian COO: {end_cpu_coo - start_cpu_coo} giay")
+    logging.info(f"Thoi gian ma tran W: {end_cpu_w - start_cpu_w} giay")
     
     return labels, k
 
