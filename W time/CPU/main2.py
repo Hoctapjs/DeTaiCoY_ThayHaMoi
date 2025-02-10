@@ -3,11 +3,11 @@
 # import code_chuan_COO as codechuan  # Import file chứa các hàm cần sử dụng
 # import code_chuan_lanczos as codechuan  # Import file chứa các hàm cần sử dụng
 # import code_chuan_lanczos_v2 as codechuan  # Import file chứa các hàm cần sử dụng
-# import code_chuan_lanczos_v2_QR as codechuan  # Import file chứa các hàm cần sử dụng
+import code_chuan_lanczos_v2_QR as codechuan  # Import file chứa các hàm cần sử dụng
 # import code_chuan_COO_His as codechuan  # Import file chứa các hàm cần sử dụng
 # import code_chuan_coo_his_chuanhoa as codechuan  # Import file chứa các hàm cần sử dụng
 """ import code_caitien_histogram_mul as codechuan  # Import file chứa các hàm cần sử dụng """
-import code_caitien_histogram_mul_luu_ketqua_phandoan_vao_folder as codechuan  # Import file chứa các hàm cần sử dụng
+""" import code_caitien_histogram_mul_luu_ketqua_phandoan_vao_folder as codechuan  # Import file chứa các hàm cần sử dụng """
 import os
 
 # Đường dẫn tương đối đến một tệp
