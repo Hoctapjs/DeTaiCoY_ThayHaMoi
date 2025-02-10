@@ -352,7 +352,7 @@ def normalized_cuts(image_path, k=2):
     logging.info(f"Thoi gian COO: {end_cpu_coo - start_cpu_coo} giay")
     logging.info(f"Thoi gian: {end_gpu - start_gpu} giay")
 
-    # display_segmentation(image, labels, k)
+    display_segmentation(image, labels, k)
     
 # 7. Mo file chon anh tu hop thoai
 def open_file_dialog():

@@ -1,0 +1,11 @@
+Thời gian trung bình của từng ảnh:
+
+2018.jpg: 70.8302 giây (Tổng) | 1.9196 giây (COO)
+3063.jpg: 74.5211 giây (Tổng) | 1.9189 giây (COO)
+5096.jpg: 68.0914 giây (Tổng) | 1.9582 giây (COO)
+6046.jpg: 70.1077 giây (Tổng) | 1.9342 giây (COO)
+8068.jpg: 69.4014 giây (Tổng) | 1.9657 giây (COO)
+
+Thời gian trung bình của cả thư mục:
+Tổng: 70.5904 giây
+COO: 1.9393 giây
