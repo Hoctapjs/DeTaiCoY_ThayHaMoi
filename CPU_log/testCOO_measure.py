@@ -84,16 +84,16 @@ def compute_weight_matrix(image, sigma_i=0.1, sigma_x=10):
 #     coords = np.array(np.meshgrid(range(h), range(w))).reshape(2, -1).T  # Tọa độ (x, y)
 #     features = image.reshape(-1, c)  # Đặc trưng màu
     
-#     logging.info(f"Kích thước ảnh: {h}x{w}x{c}")
-#     logging.info(f"Kích thước đặc trưng màu: {features.shape}, Kích thước tọa độ: {coords.shape}")
+#     logging.info(f"Kich thuoc anh: {h}x{w}x{c}")
+#     logging.info(f"Kich thuoc dac trung mau: {features.shape}, Kich thuoc toa do: {coords.shape}")
 
 #     # Song song hóa tính toán ma trận đặc trưng màu (W_features)
 #     def compute_rbf_chunk(start, end):
 #         return rbf_kernel(features[start:end], features, gamma=1/(2 * sigma_i**2))
 
-#     n_samples = features.shape[0]
+#     n_samples = features.shape[0] # lấy tổng số pixel (số điểm ảnh cần xử lý)
 #     n_chunks = 8  # Chia thành 8 phần để chạy song song
-#     chunk_size = (n_samples + n_chunks - 1) // n_chunks  # Kích thước mỗi phần
+#     chunk_size = (n_samples + n_chunks - 1) // n_chunks  # Kích thước mỗi phần, // là phép chia lấy nguyên
     
 #     results = Parallel(n_jobs=n_jobs)(
 #         delayed(compute_rbf_chunk)(i, min(i + chunk_size, n_samples))
@@ -108,14 +108,14 @@ def compute_weight_matrix(image, sigma_i=0.1, sigma_x=10):
 #     # Nhân hai ma trận để lấy ma trận trọng số cuối cùng
 #     W = W_features * W_coords
 
-#     logging.info(f"Kích thước ma trận trọng số (W): {W.shape}")
+#     logging.info(f"Kich thuoc ma tran trong so (W): {W.shape}")
 
 #     # Chuyển sang dạng ma trận thưa COO
 #     start_coo = time.time()  
 #     W_sparse = coo_matrix(W)
 #     end_coo = time.time() 
 
-#     logging.info(f"Thời gian xử lý (song song hóa): {end_coo - start_coo:.4f} giây")
+#     logging.info(f"Thoi gian xu ly (song song hoa): {end_coo - start_coo:.4f} giay")
     
 #     return W_sparse
 

@@ -21,7 +21,7 @@ def kiemThuChayNhieuLanMain(solan):
     chuoi = input("Nhập vào tên file log: ")
     # folder_path = input("Nhập vào đường dẫn thư mục chứa ảnh: ")
     # Đường dẫn tương đối đến một tệp
-    relative_path = "image_data_60"
+    relative_path = "resized_image_files"
 
     # Chuyển đổi thành đường dẫn tuyệt đối
     absolute_path = os.path.abspath(relative_path)
