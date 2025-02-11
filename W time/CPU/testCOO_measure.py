@@ -8,26 +8,39 @@ import time
 from tkinter import Tk
 from tkinter.filedialog import askopenfilename
 import logging
+import os
 from scipy.sparse import coo_matrix #chuyển sang ma trận coo
 
 
-def kiemThuChayNhieuLan(i, name):
-        temp_chuoi = f"{name}{i}"
-        temp_chuoi = temp_chuoi + '.txt'
-        logging.basicConfig(filename = temp_chuoi, level=logging.INFO, 
-                            format='%(asctime)s - %(levelname)s - %(message)s')
-        # Duong dan toi anh cua ban
-        image_path = "apple3_60x60.jpg"  # Thay bang duong dan anh cua ban
-        """ image_path = "apple4_98x100.jpg"  # Thay bang duong dan anh cua ban """
-        normalized_cuts(image_path, k=3)
+def kiemThuChayNhieuLan(i, name, folder_path):
+    # Kiểm tra xem thư mục có tồn tại không
+    if not os.path.isdir(folder_path):
+        print(f"❌ Thư mục {folder_path} không tồn tại!")
+        return
+    
+    # Lấy danh sách tất cả ảnh trong thư mục
+    image_files = [f for f in os.listdir(folder_path) if f.lower().endswith(('.png', '.jpg', '.jpeg', '.bmp', '.gif'))]
+    
+    if not image_files:
+        print(f"❌ Không tìm thấy file ảnh nào trong {folder_path}!")
+        return
 
-        # Mở hộp thoại chọn ảnh
-        # image_path = open_file_dialog()
-        # if image_path:
-        #     logging.info(f"Da chon anh: {image_path}")
-        #     normalized_cuts(image_path, k=3)  # Phan vung thanh 3 nhom
-        # else:
-        #     logging.info("Khong co anh nao duoc chon.")
+    for idx, file_name in enumerate(image_files, start=1):
+        image_path = os.path.join(folder_path, file_name)
+
+        # Tạo file log riêng cho từng lần chạy
+        log_file = f"{name}_{i}_{idx}.txt"
+        save_image_name = f"{name}_{i}_{idx}.png"
+
+        
+        # Cấu hình logging
+        logging.basicConfig(filename=log_file, level=logging.INFO,
+                            format='%(asctime)s - %(levelname)s - %(message)s')
+
+        print(f"📷 Đang xử lý ảnh {idx}: {image_path}")
+        
+        # Gọi hàm xử lý ảnh
+        normalized_cuts(i, file_name, image_path, save_image_name)
 
     
 
@@ -83,75 +96,39 @@ def compute_eigen(L, D, k=2):
     return eigvecs
 
 
-# 4. Gan nhan cho tung diem anh dua tren vector rieng
 def assign_labels(eigen_vectors, k):
-    # Dung K-Means de gan nhan
-    kmeans = KMeans(n_clusters=k, random_state=0).fit(eigen_vectors)
-    labels = kmeans.labels_
-    logging.info(f"Nhan gan cho 27 pixel dau tien: {labels[:27]}")
-    return labels
+    return KMeans(n_clusters=k, random_state=0).fit(eigen_vectors).labels_
 
-# 5. Hien thi ket qua
-def display_segmentation(image, labels, k):
+def save_segmentation(image, labels, k, output_path):
     h, w, c = image.shape
     segmented_image = np.zeros_like(image, dtype=np.uint8)
-    
-    # Tao bang mau ngau nhien
-    colors = np.random.randint(0, 255, size=(k, 3), dtype=np.uint8)
-    
-    # To mau tung vung
     for i in range(k):
-        segmented_image[labels.reshape(h, w) == i] = colors[i]
-    
-    plt.figure(figsize=(10, 5))
-    plt.subplot(1, 2, 1)
-    plt.title("Anh goc")
-    plt.imshow(image)
-    plt.axis('off')
-    
-    plt.subplot(1, 2, 2)
-    plt.title("Anh sau phan vung")
-    plt.imshow(segmented_image)
-    plt.axis('off')
-    plt.show()
+        mask = labels.reshape(h, w) == i
+        cluster_pixels = image[mask]
+        mean_color = (cluster_pixels.mean(axis=0) * 255).astype(np.uint8) if len(cluster_pixels) > 0 else np.array([0, 0, 0], dtype=np.uint8)
+        segmented_image[mask] = mean_color
+    io.imsave(output_path, segmented_image)
 
-# 6. Ket hop toan bo
-def normalized_cuts(image_path, k):
-    # Tinh thoi gian tren CPU
+def normalized_cuts(lan, imagename, image_path, output_path):
     start_cpu = time.time()
-
-    # Doc anh va chuan hoa
+    logging.info(f"file name: {imagename}")
+    logging.info(f"Lan thu: {lan}")
     image = io.imread(image_path)
-    if image.ndim == 2:  # Neu la anh xam, chuyen thanh RGB
-        image = color.gray2rgb(image)
-    elif image.shape[2] == 4:  # Neu la anh RGBA, loai bo kenh alpha
-        image = image[:, :, :3]
-    image = image / 255.0  # Chuan hoa ve [0, 1]
-    
-    # Tính thời gian riêng cho COO matrix
+    image = color.gray2rgb(image) if image.ndim == 2 else image[:, :, :3] if image.shape[2] == 4 else image
+    image = image / 255.0
+    k = 2
     start_cpu_coo = time.time()
-    # Tinh toan Ncuts
-    logging.info("Bat dau tinh ma tran trong so...")
     W = compute_weight_matrix(image)
     end_cpu_coo = time.time()
 
-    
-    logging.info("Tinh ma tran Laplace...")
     L, D = compute_laplacian(W)
-    
-    logging.info("Tinh vector rieng...")
-    eigen_vectors = compute_eigen(L, D, k=k)  # Tinh k vector rieng
-    
-    logging.info("Gan nhan cho cac diem anh...")
-    labels = assign_labels(eigen_vectors, k)  # Gan nhan cho moi diem anh
-    
-    logging.info("Hien thi ket qua...")
-
+    vecs = compute_eigen(L, D, k)
+    labels = assign_labels(vecs, k)
+    save_segmentation(image, labels, k, output_path)
     end_cpu = time.time()
     logging.info(f"Thoi gian: {end_cpu - start_cpu} giay")
     logging.info(f"Thoi gian COO: {end_cpu_coo - start_cpu_coo} giay")
-
-    display_segmentation(image, labels, k)
+    return labels, k
 
 # 7. Mo file chon anh tu hop thoai
 def open_file_dialog():

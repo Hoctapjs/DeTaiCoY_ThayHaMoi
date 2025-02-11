@@ -40,10 +40,14 @@ def compute_weight_matrix(image, sigma_i=0.1, sigma_x=10):
     useallcore = input("bạn có muốn dùng hết các lõi có thể sử dụng của CPU không?")
 
     if (useallcore == "y") :
+        # start
         W_features = np.array(Parallel(n_jobs=-1)(delayed(compute_kernel_features)(i) for i in range(features.shape[0])))
+        # end
     else :
         core_number = int(input("số lượng lõi bạn muốn dùng: "))
+        # start
         W_features = np.array(Parallel(n_jobs=core_number)(delayed(compute_kernel_features)(i) for i in range(features.shape[0])))
+        # end - 5 tiến trình - 10 tiến trình - ko có song song
 
     # Tinh do tuong dong ve dac trung va khong gian
     W_coords = rbf_kernel(coords, gamma=1/(2 * sigma_x**2))
