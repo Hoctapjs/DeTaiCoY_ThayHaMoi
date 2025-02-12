@@ -43,13 +43,13 @@ def calculate_average_time(entries):
     for entry in entries:
         file_name = entry["file_name"]
         time_data[file_name]["total_time"] += entry["thoi_gian"]
-        time_data[file_name]["total_time_coo"] += entry["thoi_gian_coo"]
+        # time_data[file_name]["total_time_coo"] += entry["thoi_gian_coo"]
         time_data[file_name]["count"] += 1
 
     averages = {
         file: {
             "average_thoi_gian": round(data["total_time"] / data["count"], 2),
-            "average_thoi_gian_coo": round(data["total_time_coo"] / data["count"], 2),
+            # "average_thoi_gian_coo": round(data["total_time_coo"] / data["count"], 2),
         }
         for file, data in time_data.items()
     }
@@ -63,11 +63,11 @@ def calculate_overall_average(average_times):
 
     for avg_data in average_times.values():
         total_avg_thoi_gian += avg_data["average_thoi_gian"]
-        total_avg_thoi_gian_coo += avg_data["average_thoi_gian_coo"]
+        # total_avg_thoi_gian_coo += avg_data["average_thoi_gian_coo"]
 
     overall_avg = {
         "overall_average_thoi_gian": round(total_avg_thoi_gian / count, 2),
-        "overall_average_thoi_gian_coo": round(total_avg_thoi_gian_coo / count, 2),
+        # "overall_average_thoi_gian_coo": round(total_avg_thoi_gian_coo / count, 2),
     }
 
     return overall_avg
@@ -89,8 +89,9 @@ if file_path:
 
     # Hiển thị kết quả trung bình theo file
     for file_name, avg_data in average_times.items():
-        print(f"{file_name}: Trung bình thời gian = {avg_data['average_thoi_gian']:.2f} giây, "
-              f"Trung bình thời gian COO = {avg_data['average_thoi_gian_coo']:.2f} giây")
+        print(f"{file_name}: Trung bình thời gian = {avg_data['average_thoi_gian']:.2f} giây, ")
+        # print(f"{file_name}: Trung bình thời gian = {avg_data['average_thoi_gian']:.2f} giây, "
+        #       f"Trung bình thời gian COO = {avg_data['average_thoi_gian_coo']:.2f} giây")
 
     # Tính trung bình tổng thể từ danh sách trung bình đã có (trung bình của tất cả file)
     overall_average = calculate_overall_average(average_times)
@@ -99,7 +100,7 @@ if file_path:
 
     # Hiển thị kết quả trung bình tổng thể
     print(f"\nTổng trung bình thời gian cả folder: {overall_average['overall_average_thoi_gian']} giây")
-    print(f"Tổng trung bình thời gian COO cả folder: {overall_average['overall_average_thoi_gian_coo']} giây")
+    # print(f"Tổng trung bình thời gian COO cả folder: {overall_average['overall_average_thoi_gian_coo']} giây")
 else:
     print("Bạn chưa chọn file nào!")
 
