@@ -90,41 +90,80 @@ def compute_laplacian(W):
 
 # 3. Giai bai toan tri rieng
 
-# def compute_eigen(L, D, k=2):
-#     # Chuyen du lieu ve CPU vi eigsh chua ho tro GPU
-#     L_cpu, D_cpu = L.get(), D.get()
-#     vals, vecs = eigsh(L_cpu, k=k, M=D_cpu, which='SM')  # 'SM' tim tri rieng nho nhat
-#     return cp.array(vecs)  # Tra ve k vector rieng (chuyen ve GPU)
+def Lanczos(A, v, m):
+    """
+    Thuật toán Lanczos để xấp xỉ trị riêng và vector riêng.
+    : A: Ma trận cần tính (numpy 2D array).
+    : v: Vector khởi tạo.
+    : m: Số bước lặp Lanczos.
+    :return: Ma trận tam giác T và ma trận trực giao V.
+    """
+    n = len(v) # Đây là số phần tử trong vector v (số chiều của ma trận A)
+    V = cp.zeros((m, n)) # đây là một ma trận mxn lưu trữ các vector trực giao (là 2 vector có tích vô hướng = 0), mỗi hàng là một bước đã đi qua, np.zeros nghĩa là ban đầu tất cả các bước đi (hay các phần tử của ma trận) đều là 0, chưa đi bước nào
+    T = cp.zeros((m, m)) # đây là ma trận tam giác T
+    V[0, :] = v / cp.linalg.norm(v) # np.linalg.norm(v) là để tính chuẩn (độ dài) của vector = căn(v1^2 + v2^2 + ...)
+    # => V[0, :] = v / np.linalg.norm(v) là để chuẩn hóa vector v đầu vào thành vector đơn vị 
+    
+    # Đoạn này là để làm cho w trực giao với V0 thôi
+    # vd: để làm cho 2 vector a và b trực giao với nhau
+    # 1. tính tích vô hướng của a và b (alpha)
+    # 2. cập nhật vector a lại 
+    #   a = a - alpha * b (b ở đây là V[0, :] = v / căn(v) )
+
+
+    w = A @ V[0, :] # tính vector w bằng cách nhân A với vector đầu tiên của V - hiểu nôm na là w sẽ cho ta biết các mà ma trận A tương tác với vector khởi tạo v
+    alpha = cp.dot(w, V[0, :]) # .dot là tính tích vô hướng của 2 vector a và b (trong case này là w và vector đầu tiên của V), hệ số alpha là để đo mức độ song song giữa w và V0
+    w = w - alpha * V[0, :]
+    # alpha * V[0, :] tạo ra một vector có hướng song song với 
+    # V[0,:] mà có độ dài tương ứng.
+    # sau khi trừ xong thì nò sẽ loại bỏ phần song song ra khỏi w
+
+    
+    T[0, 0] = alpha # Gán giá trị alpha vào phần tử đầu tiên của T
+    
+    for j in range(1, m):
+        beta = cp.linalg.norm(w)
+        if beta < 1e-10:
+            break
+        V[j, :] = w / beta
+        w = A @ V[j, :]
+        alpha = cp.dot(w, V[j, :])
+        w = w - alpha * V[j, :] - beta * V[j-1, :]
+        
+        T[j, j] = alpha
+        T[j-1, j] = beta
+        T[j, j-1] = beta
+    
+    return T, V
 
 def compute_eigen(L, D, k=2):
     """
-    Giai bai toan tri rieng bang thuat toan Lanczos (eigsh) tren GPU.
-    :param L: Ma tran Laplace thua (CuPy sparse matrix).
-    :param D: Ma tran duong cheo (CuPy sparse matrix).
-    :param k: So tri rieng nho nhat can tinh.
-    :return: Cac vector rieng tuong ung (k vector).
+    Giải bài toán trị riêng bằng thuật toán Lanczos không dùng eigsh.
+    :param L: Ma trận Laplace thưa (Scipy sparse matrix).
+    :param D: Ma trận đường chéo (Scipy sparse matrix).
+    :param k: Số trị riêng nhỏ nhất cần tính.
+    :return: Các vector riêng tương ứng (k vector).
     """
     # Chuan hoa ma tran Laplace: D^-1/2 * L * D^-1/2
     D_diag = D.diagonal().copy()  # Lay duong cheo cua D
-    D_diag[D_diag < 1e-10] = 1e-10  # Trahn chia cho 0 hoac gan 0
+    D_diag[D_diag < 1e-10] = 1e-10  # Tranh chia cho 0 hoac gan 0
     D_inv_sqrt = diags(1.0 / cp.sqrt(D_diag))  # Tinh D^-1/2
     L_normalized = D_inv_sqrt @ L @ D_inv_sqrt  # Chuan hoa ma tran Laplace
-
-    # Giai bai toan tri rieng bang eigsh
-    eigvals, eigvecs = eigsh(L_normalized, k=k, which='SA')  # Dung SA thay vi SM
-
-    # Chuyen lai eigenvectors ve khong gian goc bang cach nhan D^-1/2
-    eigvecs_original = D_inv_sqrt @ eigvecs
-
+    
+    # Khởi tạo vector ngẫu nhiên
+    v0 = cp.random.rand(L.shape[0])
+    v0 /= cp.linalg.norm(v0)
+    
+    # Áp dụng thuật toán Lanczos
+    T, V = Lanczos(L_normalized, v0, m=k+5)  # Sử dụng m > k để tăng độ chính xác
+    
+    # Tính trị riêng và vector riêng của ma trận tam giác T
+    eigvals, eigvecs_T = cp.linalg.eigh(T[:k, :k])
+    
+    # Chuyển đổi vector riêng về không gian gốc
+    eigvecs_original = D_inv_sqrt @ (V[:k, :].T @ eigvecs_T)
+    
     return eigvecs_original
-
-
-# def compute_eigen(L, k=2):
-#     # Tìm các trị riêng nhỏ nhất (Smallest Magnitude)
-#     eigvals, eigvecs = eigsh(L, k=k, which='SA')  
-#     return eigvecs
-
-
 
 # 4. Gan nhan cho tung diem anh duoc dua tren vector rieng
 def assign_labels(eigen_vectors, k):

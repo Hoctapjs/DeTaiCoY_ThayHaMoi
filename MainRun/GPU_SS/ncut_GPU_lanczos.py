@@ -1,19 +1,19 @@
 import cupy as cp  # Thay thế NumPy bằng CuPy
 import matplotlib.pyplot as plt
 from sklearn.metrics.pairwise import rbf_kernel
-from cupyx.scipy.sparse.linalg import eigsh
+# from scipy.sparse.linalg import eigsh
 from sklearn.cluster import KMeans
 from skimage import io, color
 import cupyx.scipy.sparse as sp
+from cupyx.scipy.sparse.linalg import eigsh
+from cupyx.scipy.sparse import diags
 import time
-import logging
-from scipy.signal import find_peaks
-from cupyx.scipy.sparse import coo_matrix
 from tkinter import Tk
 from tkinter.filedialog import askopenfilename
-from  cupyx.scipy.sparse import diags
+import logging
 import os
 import re
+
 
 def process_logs_for_summary(name):
     """
@@ -75,10 +75,10 @@ def process_logs_for_summary(name):
     with open(summary_log, "w", encoding="utf-8") as f:
         f.write("Thời gian trung bình của từng ảnh:\n\n")
         for img in avg_time_per_image:
-            f.write(f"{img}: {avg_time_per_image[img]:.4f} giây (Tổng) | {avg_coo_time_per_image[img]:.4f} giây (COO)\n")
+            f.write(f"{img}: {avg_time_per_image[img]:.4f} giây (Lanczos) | {avg_coo_time_per_image[img]:.4f} giây (COO)\n")
 
         f.write(f"\nThời gian trung bình của cả thư mục:\n")
-        f.write(f"Tổng: {avg_time_folder:.4f} giây\n")
+        f.write(f"Lanczos: {avg_time_folder:.4f} giây\n")
         f.write(f"COO: {avg_coo_time_folder:.4f} giây\n")
 
     print(f"📊 Đã lưu kết quả vào {summary_log}")
@@ -119,167 +119,126 @@ def kiemThuChayNhieuLan(i, name, folder_path):
     process_logs_for_summary(name)
 
 
-
-def find_peaks_with_conditions(histogram, delta_threshold, dist_threshold):
-    """
-    Tìm các đỉnh cực đại trong histogram thỏa mãn điều kiện về độ lệch và khoảng cách
-    
-    Args:
-        histogram: Mảng histogram
-        delta_threshold: Ngưỡng độ lệch chiều cao tối thiểu (sigma*)
-        dist_threshold: Ngưỡng khoảng cách tối thiểu (delta*)
-    
-    Returns:
-        peaks: Các vị trí của đỉnh cực đại thỏa mãn điều kiện
-    """
-    # Tìm tất cả các đỉnh cực đại
-    """ peaks, _ = find_peaks(histogram) """
-    peaks, _ = find_peaks(cp.asnumpy(histogram))  # SciPy hỗ trợ NumPy, cần chuyển về NumPy.
-    peaks = cp.array(peaks)  # Chuyển lại về CuPy để tiếp tục xử lý trên GPU.
-    # Lọc các đỉnh theo điều kiện
-    valid_peaks = []
-    
-    for i in range(len(peaks)):
-        is_valid = True
-        for j in range(len(peaks)):
-            if i != j:
-                # Tính độ lệch chiều cao và khoảng cách
-                delta = abs(histogram[peaks[i]] - histogram[peaks[j]])
-                dist = abs(peaks[i] - peaks[j])
-                
-                # Kiểm tra điều kiện theo công thức (3.1) và (3.2)
-                if delta < delta_threshold or dist < dist_threshold:
-                    is_valid = False
-                    break
-        
-        if is_valid:
-            valid_peaks.append(peaks[i])
-    return cp.array(valid_peaks)
-
-def determine_k_from_histogram(image):
-    """
-    Xác định số nhóm k dựa trên phân tích histogram
-    
-    Args:
-        image: Ảnh đầu vào (đã chuẩn hóa về [0, 1])
-        
-    Returns:
-        k: Số nhóm cần phân đoạn
-    """
-    # Chuyển ảnh sang ảnh xám nếu là ảnh màu
-    if len(image.shape) == 3:
-        gray_image = color.rgb2gray(image)
-        gray_image = cp.array(gray_image)  # Chuyển về GPU.
-    else:
-        gray_image = image
-    
-    # Tính histogram
-    histogram, _ = cp.histogram(gray_image, bins=256, range=(0, 1))
-    
-    # Các tham số ngưỡng (cần điều chỉnh dựa trên tập huấn luyện)
-    delta_threshold = cp.max(histogram) * 0.1  # sigma* = 10% của giá trị cao nhất
-    dist_threshold = 20  # delta* = 20 bins
-    
-    # Tìm các đỉnh thỏa mãn điều kiện
-    valid_peaks = find_peaks_with_conditions(histogram, delta_threshold, dist_threshold)
-    
-    # Số nhóm k là số đỉnh hợp lệ
-    k = len(valid_peaks)
-    
-    # Đảm bảo k ít nhất là 2
-    return max(2, k)
-
-def determine_max_k(image, sigma_i=0.1, sigma_x=10):
-    """
-    Xác định số nhóm k tối đa dựa trên histogram
-    
-    Args:
-        image: Ảnh đầu vào
-        sigma_i, sigma_x: Các tham số cho tính toán ma trận trọng số (không sử dụng trong phương pháp mới)
-    
-    Returns:
-        k: Số nhóm tối đa cần phân đoạn
-    """
-    k = determine_k_from_histogram(image)
-    
-    # Giới hạn k dựa trên kích thước ảnh để tránh over-segmentation
-    h, w, _ = image.shape
-    max_k = min(k, int(cp.sqrt(h * w) / 10))
-    
-    return max(2, max_k)
-
+# ĐÂY LÀ CÁCH CHẠY MA TRẬN TRỌNG SỐ W TRÊN GPU THEO LOGIC GIỐNG BÊN CPU
 def compute_weight_matrix(image, sigma_i=0.1, sigma_x=10):
     h, w, c = image.shape
-    coords = cp.array(cp.meshgrid(cp.arange(h), cp.arange(w))).reshape(2, -1).T  # Tọa độ (x, y)
-    features = image.reshape(-1, c)  # Đặc trưng màu
+    # logging.info(f"Kích thước ảnh: {h}x{w}x{c}")
 
-    # logging.info(f"Kich thuoc anh: {h}x{w}x{c}")
-    # logging.info(f"Kich thuoc dac trung mau: {features.shape}, Kich thuoc toa do: {coords.shape}")
-    # logging.info(f"Dac trung mau:\n{features[:9, :9]}")
-    # logging.info(f"Toa do:\n{coords[:9, :9]}")
+    # Tọa độ (x, y)
+    coords = cp.array(cp.meshgrid(cp.arange(h), cp.arange(w))).reshape(2, -1).T
 
-    # Tính độ tương đồng về đặc trưng và không gian
-    W_features = rbf_kernel(cp.asnumpy(features), gamma=1/(2 * sigma_i**2))  # Chuyển dữ liệu từ GPU sang CPU
-    W_coords = rbf_kernel(cp.asnumpy(coords), gamma=1/(2 * sigma_x**2))  # Chuyển dữ liệu từ GPU sang CPU
+    # Đặc trưng màu
+    features = cp.array(image).reshape(-1, c)
 
-    # Chuyển kết quả từ NumPy (CPU) sang CuPy (GPU)
-    W_features = cp.asarray(W_features)
-    W_coords = cp.asarray(W_coords)
+    # logging.info(f"Kích thước đặc trưng màu: {features.shape}, Kích thước tọa độ: {coords.shape}")
+    # logging.info(f"Đặc trưng màu (9 phần tử đầu):\n{features[:9, :9]}")
+    # logging.info(f"Tọa độ (9 phần tử đầu):\n{coords[:9, :9]}")
 
-    W = cp.multiply(W_features, W_coords)  # Phép nhân phần tử của ma trận trên GPU
+    # Tính ma trận trọng số bằng vector hóa
+    W_color = cp.array(rbf_kernel(features.get(), gamma=1 / (2 * sigma_i**2)))
+    W_space = cp.array(rbf_kernel(coords.get(), gamma=1 / (2 * sigma_x**2)))
+    W = W_color * W_space
 
-    # Chuyển thành ma trận thưa dạng COO
-    W_sparse = coo_matrix(W)
+    # logging.info(f"Mảnh của W (9x9 phần tử đầu):\n{W[:9, :9]}")
+    return W
 
-    # logging.info(f"Kich thuoc ma tran trong so (W): {W.shape}")
-    # logging.info(f"Kich thuoc ma tran thua (W_sparse): {W_sparse.shape}")
-    # logging.info(f"So luong phan tu khac 0: {W_sparse.nnz}")
-    # logging.info(f"Mau cua W_features (9x9 phan tu dau):\n{W_features[:9, :9]}")
-    # logging.info(f"Mau cua W_coords (9x9 phan tu dau):\n{W_coords[:9, :9]}")
-    # logging.info(f"Mau cua W (9x9 phan tu dau):\n{W[:9, :9]}")
-
-    return W_sparse
 
 # 2. Tinh ma tran Laplace
-def compute_laplacian(W_sparse):
-    # Tổng của các hàng trong ma trận W
-    D_diag = W_sparse.sum(axis=1).get().flatten()  # Tính tổng các hàng
-    D = cp.diag(D_diag)  # Tạo ma trận đường chéo từ tổng hàng
-    L = D - W_sparse  # L = D - W
-    # logging.info("Kich thuoc ma tran duong cheo (D): %s", D.shape)
-    # logging.info("Mau cua D (9 phan tu dau):\n%s", D_diag[:9])  # In phần tử trên đường chéo
-    # logging.info("Kich thuoc ma tran Laplace (L): %s", L.shape)
-    # logging.info("Mau cua L (9x9 phan tu dau):\n%s", L[:9, :9])
+def compute_laplacian(W):
+    D = cp.diag(W.sum(axis=1))  # Ma trận đường chéo
+    L = D - W
+    # logging.info("Kích thước ma trận đường chéo (D):", D.shape)
+    # logging.info("Mẫu của D (9x9 phần tử đầu):\n", D[:9, :9])
+    # logging.info("Kích thước ma trận Laplace (L):", L.shape)
+    # logging.info("Mẫu của L (9x9 phần tử đầu):\n", L[:9, :9])
+    
     return L, D
 
 # 3. Giai bai toan tri rieng
+
+def Lanczos(A, v, m):
+    """
+    Thuật toán Lanczos để xấp xỉ trị riêng và vector riêng.
+    : A: Ma trận cần tính (numpy 2D array).
+    : v: Vector khởi tạo.
+    : m: Số bước lặp Lanczos.
+    :return: Ma trận tam giác T và ma trận trực giao V.
+    """
+    n = len(v) # Đây là số phần tử trong vector v (số chiều của ma trận A)
+    V = cp.zeros((m, n)) # đây là một ma trận mxn lưu trữ các vector trực giao (là 2 vector có tích vô hướng = 0), mỗi hàng là một bước đã đi qua, np.zeros nghĩa là ban đầu tất cả các bước đi (hay các phần tử của ma trận) đều là 0, chưa đi bước nào
+    T = cp.zeros((m, m)) # đây là ma trận tam giác T
+    V[0, :] = v / cp.linalg.norm(v) # np.linalg.norm(v) là để tính chuẩn (độ dài) của vector = căn(v1^2 + v2^2 + ...)
+    # => V[0, :] = v / np.linalg.norm(v) là để chuẩn hóa vector v đầu vào thành vector đơn vị 
+    
+    # Đoạn này là để làm cho w trực giao với V0 thôi
+    # vd: để làm cho 2 vector a và b trực giao với nhau
+    # 1. tính tích vô hướng của a và b (alpha)
+    # 2. cập nhật vector a lại 
+    #   a = a - alpha * b (b ở đây là V[0, :] = v / căn(v) )
+
+
+    w = A @ V[0, :] # tính vector w bằng cách nhân A với vector đầu tiên của V - hiểu nôm na là w sẽ cho ta biết các mà ma trận A tương tác với vector khởi tạo v
+    alpha = cp.dot(w, V[0, :]) # .dot là tính tích vô hướng của 2 vector a và b (trong case này là w và vector đầu tiên của V), hệ số alpha là để đo mức độ song song giữa w và V0
+    w = w - alpha * V[0, :]
+    # alpha * V[0, :] tạo ra một vector có hướng song song với 
+    # V[0,:] mà có độ dài tương ứng.
+    # sau khi trừ xong thì nò sẽ loại bỏ phần song song ra khỏi w
+
+    
+    T[0, 0] = alpha # Gán giá trị alpha vào phần tử đầu tiên của T
+    
+    for j in range(1, m):
+        beta = cp.linalg.norm(w)
+        if beta < 1e-10:
+            break
+        V[j, :] = w / beta
+        w = A @ V[j, :]
+        alpha = cp.dot(w, V[j, :])
+        w = w - alpha * V[j, :] - beta * V[j-1, :]
+        
+        T[j, j] = alpha
+        T[j-1, j] = beta
+        T[j, j-1] = beta
+    
+    return T, V
+
 def compute_eigen(L, D, k=2):
     """
-    Giai bai toan tri rieng bang thuat toan Lanczos (eigsh) tren GPU.
-    :param L: Ma tran Laplace thua (CuPy sparse matrix).
-    :param D: Ma tran duong cheo (CuPy sparse matrix).
-    :param k: So tri rieng nho nhat can tinh.
-    :return: Cac vector rieng tuong ung (k vector).
+    Giải bài toán trị riêng bằng thuật toán Lanczos không dùng eigsh.
+    :param L: Ma trận Laplace thưa (Scipy sparse matrix).
+    :param D: Ma trận đường chéo (Scipy sparse matrix).
+    :param k: Số trị riêng nhỏ nhất cần tính.
+    :return: Các vector riêng tương ứng (k vector).
     """
     # Chuan hoa ma tran Laplace: D^-1/2 * L * D^-1/2
     D_diag = D.diagonal().copy()  # Lay duong cheo cua D
     D_diag[D_diag < 1e-10] = 1e-10  # Tranh chia cho 0 hoac gan 0
     D_inv_sqrt = diags(1.0 / cp.sqrt(D_diag))  # Tinh D^-1/2
     L_normalized = D_inv_sqrt @ L @ D_inv_sqrt  # Chuan hoa ma tran Laplace
+    
+    # Khởi tạo vector ngẫu nhiên
+    v0 = cp.random.rand(L.shape[0])
+    v0 /= cp.linalg.norm(v0)
+     
+    start_lan = time.time()
+    # Áp dụng thuật toán Lanczos
+    T, V = Lanczos(L_normalized, v0, m=k+5)  # Sử dụng m > k để tăng độ chính xác
+    end_lan = time.time()
+    logging.info(f"Thoi gian: {end_lan - start_lan} giay")
 
-    # Giai bai toan tri rieng bang eigsh
-    eigvals, eigvecs = eigsh(L_normalized, k=k, which='SA')  # Dung SA thay vi SM
-
-    # Chuyen lai eigenvectors ve khong gian goc bang cach nhan D^-1/2
-    eigvecs_original = D_inv_sqrt @ eigvecs
-
+    # Tính trị riêng và vector riêng của ma trận tam giác T
+    eigvals, eigvecs_T = cp.linalg.eigh(T[:k, :k])
+    
+    # Chuyển đổi vector riêng về không gian gốc
+    eigvecs_original = D_inv_sqrt @ (V[:k, :].T @ eigvecs_T)
+    
     return eigvecs_original
 
-# 4. Gan nhan cho tung diem anh dua tren vector rieng
+# 4. Gan nhan cho tung diem anh duoc dua tren vector rieng
 def assign_labels(eigen_vectors, k):
     # Chuyen du lieu ve CPU de dung K-Means
     eigen_vectors_cpu = eigen_vectors.get()
-    # logging.info(f"Mau cua vector rieng (9 hang dau):\n{eigen_vectors_cpu[:9, :]}")
+    # logging.info(f"Manh cua vector rieng (9 hang dau):\n{eigen_vectors_cpu[:9, :]}")
 
     kmeans = KMeans(n_clusters=k, random_state=0).fit(eigen_vectors_cpu)
     labels = kmeans.labels_
@@ -314,7 +273,7 @@ def display_segmentation(image, labels, k):
 # 6. Ket hop toan bo
 def normalized_cuts(image_path, k=2):
     
-    # Tinh toan tren GPU
+    # Tinh tong tren GPU
     start_gpu = time.time()
     
     # Doc anh va chuan hoa
@@ -324,36 +283,30 @@ def normalized_cuts(image_path, k=2):
     elif image.shape[2] == 4:  # Neu la anh RGBA, loai bo kenh alpha
         image = image[:, :, :3]
     image = image / 255.0  # Chuan hoa ve [0, 1]
-
-    # Xác định số cụm k dựa trên histogram
-    print("Determining optimal k from histogram...")
-    k = determine_max_k(image)
-    print(f"Optimal k determined: {k}")
     
     # Tinh toan Ncuts
     start_cpu_coo = time.time()
     # logging.info("Dang tinh toan ma tran trong so...")
     W = compute_weight_matrix(image)
     end_cpu_coo = time.time()
-
-    # logging.info("Dang tinh toan ma tran Laplace...")
+    
+    # logging.info("Tinh Laplace...")
     L, D = compute_laplacian(W)
     
-    # logging.info("Dang tinh vector rieng...")
+    # logging.info("Tinh eigenvectors...")
     eigen_vectors = compute_eigen(L,D, k=k)  # Tinh k vector rieng
     
-    # logging.info("Dang phan vung do thi...")
+    # logging.info("Phan vung do thi...")
     labels = assign_labels(eigen_vectors, k)  # Gan nhan cho moi diem anh
     
-    # logging.info("Dang hien thi ket qua...")
+    # logging.info("Hien thi ket qua...")
 
     cp.cuda.Stream.null.synchronize()  # Dong bo hoa de dam bao GPU hoan thanh tinh toan
     end_gpu = time.time()
     logging.info(f"Thoi gian COO: {end_cpu_coo - start_cpu_coo} giay")
-    logging.info(f"Thoi gian: {end_gpu - start_gpu} giay")
+    # logging.info(f"Thoi gian: {end_gpu - start_gpu} giay")
+    display_segmentation(image, labels, k)
 
-    # display_segmentation(image, labels, k)
-    
 # 7. Mo file chon anh tu hop thoai
 def open_file_dialog():
     # Tao cua so an cho tkinter

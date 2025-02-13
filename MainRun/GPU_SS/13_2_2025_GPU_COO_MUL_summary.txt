@@ -1,0 +1,15 @@
+Thời gian trung bình của từng ảnh:
+
+50.jpg: 0.8081 giây (Tổng) | 0.4679 giây (COO)
+55.jpg: 0.3159 giây (Tổng) | 0.0163 giây (COO)
+60.jpg: 0.4364 giây (Tổng) | 0.0203 giây (COO)
+65.jpg: 0.6083 giây (Tổng) | 0.0253 giây (COO)
+70.jpg: 0.8326 giây (Tổng) | 0.0307 giây (COO)
+75.jpg: 1.0618 giây (Tổng) | 0.0376 giây (COO)
+80.jpg: 1.4423 giây (Tổng) | 0.0470 giây (COO)
+85.jpg: 29.5643 giây (Tổng) | 0.2495 giây (COO)
+90.jpg: 54.9283 giây (Tổng) | 2.3376 giây (COO)
+
+Thời gian trung bình của cả thư mục:
+Tổng: 9.9998 giây
+COO: 0.3591 giây
