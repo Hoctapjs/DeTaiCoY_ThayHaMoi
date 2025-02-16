@@ -130,6 +130,7 @@ def compute_weight_matrix(image, sigma_i=0.1, sigma_x=10):
     # logging.info(f"Dac trung mau:\n{features[:9, :9]}")
     # logging.info(f"Toa do:\n{coords[:9, :9]}")
 
+    start_cpu_coo=time.time()
     # Tính độ tương đồng về đặc trưng và không gian
     W_features = rbf_kernel(cp.asnumpy(features), gamma=1/(2 * sigma_i**2))  # Chuyển dữ liệu từ GPU sang CPU
     W_coords = rbf_kernel(cp.asnumpy(coords), gamma=1/(2 * sigma_x**2))  # Chuyển dữ liệu từ GPU sang CPU
@@ -137,6 +138,9 @@ def compute_weight_matrix(image, sigma_i=0.1, sigma_x=10):
     # Chuyển kết quả từ NumPy (CPU) sang CuPy (GPU)
     W_features = cp.asarray(W_features)
     W_coords = cp.asarray(W_coords)
+    end_cpu_coo=time.time()
+
+    logging.info(f"Thoi gian COO: {end_cpu_coo - start_cpu_coo} giay")
 
     W = cp.multiply(W_features, W_coords)  # Phép nhân phần tử của ma trận trên GPU
 
@@ -257,7 +261,7 @@ def normalized_cuts(image_path, k=2):
 
     cp.cuda.Stream.null.synchronize()  # Dong bo hoa de dam bao GPU hoan thanh tinh toan
     end_gpu = time.time()
-    logging.info(f"Thoi gian COO: {end_cpu_coo - start_cpu_coo} giay")
+    # logging.info(f"Thoi gian COO: {end_cpu_coo - start_cpu_coo} giay")
     logging.info(f"Thoi gian: {end_gpu - start_gpu} giay")
 
     # display_segmentation(image, labels, k)

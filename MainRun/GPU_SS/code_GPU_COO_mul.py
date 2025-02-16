@@ -163,12 +163,16 @@ def compute_weight_matrix(image, sigma_i=0.1, sigma_x=10, threads_per_block=300)
 
     # logging.info(f"Kích thước ảnh: {h}x{w}x{c}")
     # logging.info(f"Kích thước đặc trưng màu: {features.shape}, Kích thước tọa độ: {coords.shape}")
-
+    start_cpu_coo=time.time()
     gamma_i = 1 / (2 * sigma_i**2)
     gamma_x = 1 / (2 * sigma_x**2)
 
     W_features = compute_rbf_matrix(features, gamma_i, threads_per_block)
     W_coords = compute_rbf_matrix(coords, gamma_x, threads_per_block)
+    end_cpu_coo=time.time()
+
+    logging.info(f"Thoi gian COO: {end_cpu_coo - start_cpu_coo} giay")
+
 
     W = cp.multiply(W_features, W_coords)
 
@@ -286,7 +290,7 @@ def normalized_cuts(image_path, k=2):
 
     cp.cuda.Stream.null.synchronize()  # Dong bo hoa de dam bao GPU hoan thanh tinh toan
     end_gpu = time.time()
-    logging.info(f"Thoi gian COO: {end_cpu_coo - start_cpu_coo} giay")
+    # logging.info(f"Thoi gian COO: {end_cpu_coo - start_cpu_coo} giay")
     logging.info(f"Thoi gian: {end_gpu - start_gpu} giay")
 
     # display_segmentation(image, labels, k)
