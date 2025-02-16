@@ -169,27 +169,6 @@ def Lanczos_parallel(A, v, m, n_jobs=4):
 
     return T, V
 
-# So sánh tốc độ giữa bản thường và bản song song
-n = 500  # Kích thước ma trận
-A = np.random.rand(n, n)  # Tạo ma trận ngẫu nhiên
-v = np.random.rand(n)  # Vector ngẫu nhiên
-m = 10  # Số bước lặp Lanczos
-
-# Đo thời gian chạy của thuật toán tuần tự
-start_time = time.time()
-T_serial, V_serial = Lanczos_parallel(A, v, m, n_jobs=1)  # Chạy với 1 luồng (tương đương tuần tự)
-serial_time = time.time() - start_time
-
-# Đo thời gian chạy của thuật toán song song
-start_time = time.time()
-T_parallel, V_parallel = Lanczos_parallel(A, v, m, n_jobs=4)  # Chạy với 4 luồng
-parallel_time = time.time() - start_time
-
-print(f"Thời gian chạy (tuần tự): {serial_time:.4f} giây")
-print(f"Thời gian chạy (song song 4 luồng): {parallel_time:.4f} giây")
-print(f"Tăng tốc: {serial_time / parallel_time:.2f} lần")
-
-
 def compute_eigen(L, D, k=2):
     """
     Giải bài toán trị riêng bằng thuật toán Lanczos không dùng eigsh.

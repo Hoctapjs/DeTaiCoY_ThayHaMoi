@@ -45,79 +45,79 @@ def kiemThuChayNhieuLan(i, name, folder_path):
     
 
 # 1. Tinh ma tran trong so
-def compute_weight_matrix(image, sigma_i=0.1, sigma_x=10):
-    h, w, c = image.shape
-    coords = np.array(np.meshgrid(range(h), range(w))).reshape(2, -1).T  # Toa do (x, y)
-    features = image.reshape(-1, c)  # Dac trung mau
-    
-    logging.info(f"Kich thuoc anh: {h}x{w}x{c}")
-    logging.info(f"Kich thuoc dac trung mau: {features.shape}, Kich thuoc toa do: {coords.shape}")
-    logging.info(f"Dac trung mau:\n{features[:9, :9]}")
-    logging.info(f"Toa do:\n{coords[:9, :9]}")
-
-    
-    # Tinh do tuong dong ve dac trung va khong gian
-    W_features = rbf_kernel(features, gamma=1/(2 * sigma_i**2))
-    W_coords = rbf_kernel(coords, gamma=1/(2 * sigma_x**2))
-    W = W_features * W_coords
-    
-    logging.info(f"Kich thuoc ma tran trong so (W): {W.shape}")
-    logging.info(f"Kich thuoc ma tran dac trung mau: {W_features.shape}, Kich thuoc ma tran toa do: {W_coords.shape}")
-    logging.info(f"Mau cua W_features (9x9 phan tu dau):\n{W_features[:9, :9]}")
-    logging.info(f"Mau cua W_coords (9x9 phan tu dau):\n{W_coords[:9, :9]}")
-    logging.info(f"Mau cua W (9x9 phan tu dau):\n{W[:9, :9]}")
-
-    # Chuyen ma tran W sang dang ma tran thua COO
-    start_coo = time.time() 
-    W_sparse = coo_matrix(W)
-    end_coo = time.time()  
-
-    logging.info(f"Thời gian xử lý (không song song): {end_coo - start_coo:.4f} giây")
-    logging.info(f"Kich thuoc ma tran thua (COO): {W_sparse.shape}")
-    logging.info(f"Mau cua ma tran thua (COO) [du lieu, hang, cot]:\n{W_sparse.data[:9]}, {W_sparse.row[:9]}, {W_sparse.col[:9]}")
-    
-    return W_sparse
-
-# 1. Tinh ma tran trong so
-# def compute_weight_matrix(image, sigma_i=0.1, sigma_x=10, n_jobs=-1):
+# def compute_weight_matrix(image, sigma_i=0.1, sigma_x=10):
 #     h, w, c = image.shape
-#     coords = np.array(np.meshgrid(range(h), range(w))).reshape(2, -1).T  # Tọa độ (x, y)
-#     features = image.reshape(-1, c)  # Đặc trưng màu
+#     coords = np.array(np.meshgrid(range(h), range(w))).reshape(2, -1).T  # Toa do (x, y)
+#     features = image.reshape(-1, c)  # Dac trung mau
     
 #     logging.info(f"Kich thuoc anh: {h}x{w}x{c}")
 #     logging.info(f"Kich thuoc dac trung mau: {features.shape}, Kich thuoc toa do: {coords.shape}")
+#     logging.info(f"Dac trung mau:\n{features[:9, :9]}")
+#     logging.info(f"Toa do:\n{coords[:9, :9]}")
 
-#     # Song song hóa tính toán ma trận đặc trưng màu (W_features)
-#     def compute_rbf_chunk(start, end):
-#         return rbf_kernel(features[start:end], features, gamma=1/(2 * sigma_i**2))
-
-#     n_samples = features.shape[0] # lấy tổng số pixel (số điểm ảnh cần xử lý)
-#     n_chunks = 8  # Chia thành 8 phần để chạy song song
-#     chunk_size = (n_samples + n_chunks - 1) // n_chunks  # Kích thước mỗi phần, // là phép chia lấy nguyên
     
-#     results = Parallel(n_jobs=n_jobs)(
-#         delayed(compute_rbf_chunk)(i, min(i + chunk_size, n_samples))
-#         for i in range(0, n_samples, chunk_size)
-#     )
-    
-#     W_features = np.vstack(results)  # Ghép lại thành ma trận hoàn chỉnh
-    
-#     # Tính ma trận tọa độ W_coords
+#     # Tinh do tuong dong ve dac trung va khong gian
+#     W_features = rbf_kernel(features, gamma=1/(2 * sigma_i**2))
 #     W_coords = rbf_kernel(coords, gamma=1/(2 * sigma_x**2))
-
-#     # Nhân hai ma trận để lấy ma trận trọng số cuối cùng
 #     W = W_features * W_coords
-
+    
 #     logging.info(f"Kich thuoc ma tran trong so (W): {W.shape}")
+#     logging.info(f"Kich thuoc ma tran dac trung mau: {W_features.shape}, Kich thuoc ma tran toa do: {W_coords.shape}")
+#     logging.info(f"Mau cua W_features (9x9 phan tu dau):\n{W_features[:9, :9]}")
+#     logging.info(f"Mau cua W_coords (9x9 phan tu dau):\n{W_coords[:9, :9]}")
+#     logging.info(f"Mau cua W (9x9 phan tu dau):\n{W[:9, :9]}")
 
-#     # Chuyển sang dạng ma trận thưa COO
-#     start_coo = time.time()  
+#     # Chuyen ma tran W sang dang ma tran thua COO
+#     start_coo = time.time() 
 #     W_sparse = coo_matrix(W)
-#     end_coo = time.time() 
+#     end_coo = time.time()  
 
-#     logging.info(f"Thoi gian xu ly (song song hoa): {end_coo - start_coo:.4f} giay")
+#     logging.info(f"Thoi gian xu ly (khong song song): {end_coo - start_coo:.4f} giay")
+#     logging.info(f"Kich thuoc ma tran thua (COO): {W_sparse.shape}")
+#     logging.info(f"Mau cua ma tran thua (COO) [du lieu, hang, cot]:\n{W_sparse.data[:9]}, {W_sparse.row[:9]}, {W_sparse.col[:9]}")
     
 #     return W_sparse
+
+# 1. Tinh ma tran trong so
+def compute_weight_matrix(image, sigma_i=0.1, sigma_x=10, n_jobs=-1):
+    h, w, c = image.shape
+    coords = np.array(np.meshgrid(range(h), range(w))).reshape(2, -1).T  # Tọa độ (x, y)
+    features = image.reshape(-1, c)  # Đặc trưng màu
+    
+    logging.info(f"Kich thuoc anh: {h}x{w}x{c}")
+    logging.info(f"Kich thuoc dac trung mau: {features.shape}, Kich thuoc toa do: {coords.shape}")
+
+    # Song song hóa tính toán ma trận đặc trưng màu (W_features)
+    def compute_rbf_chunk(start, end):
+        return rbf_kernel(features[start:end], features, gamma=1/(2 * sigma_i**2))
+
+    n_samples = features.shape[0] # lấy tổng số pixel (số điểm ảnh cần xử lý)
+    n_chunks = 8  # Chia thành 8 phần để chạy song song
+    chunk_size = (n_samples + n_chunks - 1) // n_chunks  # Kích thước mỗi phần, // là phép chia lấy nguyên
+    
+    results = Parallel(n_jobs=n_jobs)(
+        delayed(compute_rbf_chunk)(i, min(i + chunk_size, n_samples))
+        for i in range(0, n_samples, chunk_size)
+    )
+    
+    W_features = np.vstack(results)  # Ghép lại thành ma trận hoàn chỉnh
+    
+    # Tính ma trận tọa độ W_coords
+    W_coords = rbf_kernel(coords, gamma=1/(2 * sigma_x**2))
+
+    # Nhân hai ma trận để lấy ma trận trọng số cuối cùng
+    W = W_features * W_coords
+
+    logging.info(f"Kich thuoc ma tran trong so (W): {W.shape}")
+
+    # Chuyển sang dạng ma trận thưa COO
+    start_coo = time.time()  
+    W_sparse = coo_matrix(W)
+    end_coo = time.time() 
+
+    logging.info(f"Thoi gian xu ly (song song hoa): {end_coo - start_coo:.4f} giay")
+    
+    return W_sparse
 
 
 # 2. Tinh ma tran Laplace
