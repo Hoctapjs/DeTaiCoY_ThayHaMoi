@@ -9,21 +9,40 @@ from tkinter import Tk
 from tkinter.filedialog import askopenfilename
 import time
 import logging
+import os
 
-def kiemThuChayNhieuLan(i, name):
-        temp_chuoi = f"{name}{i}"
-        temp_chuoi = temp_chuoi + '.txt'
-        logging.basicConfig(filename = temp_chuoi, level=logging.INFO, 
+def kiemThuChayNhieuLan(i, name, folder_path):
+    # Kiểm tra xem thư mục có tồn tại không
+    if not os.path.isdir(folder_path):
+        print(f"❌ Thư mục {folder_path} không tồn tại!")
+        return
+    
+    # Lấy danh sách tất cả ảnh trong thư mục
+    image_files = [f for f in os.listdir(folder_path) if f.lower().endswith(('.png', '.jpg', '.jpeg', '.bmp', '.gif'))]
+    
+    if not image_files:
+        print(f"❌ Không tìm thấy file ảnh nào trong {folder_path}!")
+        return
+
+    for idx, file_name in enumerate(image_files, start=1):
+        image_path = os.path.join(folder_path, file_name)
+
+        # Tạo file log riêng cho từng lần chạy
+        log_file = f"{name}_{i}_{idx}.txt"
+        save_image_name = f"{name}_{i}_{idx}.png"
+
+        
+        # Cấu hình logging
+        logging.basicConfig(filename=log_file, level=logging.INFO,
                             format='%(asctime)s - %(levelname)s - %(message)s')
-        # Duong dan toi anh cua ban
-        # Mo hop thoai chon anh
-        image_path = "apple3_60x60.jpg"  # Thay bang duong dan anh cua ban
-        """ image_path = "apple4_98x100.jpg"  # Thay bang duong dan anh cua ban """
-        normalized_cuts(image_path, k=3)
+
+        print(f"📷 Đang xử lý ảnh {idx}: {image_path}")
+        
+        # Gọi hàm xử lý ảnh
+        normalized_cuts(i, file_name, image_path, save_image_name)
 
 def compute_weight_matrix(image, sigma_i=0.1, sigma_x=10):
     h, w, c = image.shape
-    logging.info(f"Kich thuoc anh: {h}x{w}x{c}")
 
     # Toa do (x, y)
     coords = cp.array(cp.meshgrid(cp.arange(h), cp.arange(w))).reshape(2, -1).T
@@ -31,26 +50,18 @@ def compute_weight_matrix(image, sigma_i=0.1, sigma_x=10):
     # Dac trung mau
     features = cp.array(image).reshape(-1, c)
 
-    logging.info(f"Kich thuoc dac trung mau: {features.shape}, Kich thuoc toa do: {coords.shape}")
-    logging.info(f"Dac trung mau (9 phan tu dau):\n{features[:9, :9]}")
-    logging.info(f"Toa do (9 phan tu dau):\n{coords[:9, :9]}")
     
     # Tinh ma tran trong so bang vector hoa
     W_color = cp.array(rbf_kernel(features.get(), gamma=1 / (2 * sigma_i**2)))
     W_space = cp.array(rbf_kernel(coords.get(), gamma=1 / (2 * sigma_x**2)))
     W = W_color * W_space
 
-    logging.info(f"Manh cua W (9x9 phan tu dau):\n{W[:9, :9]}")
     return W
 
 # 2. Tinh ma tran Laplace
 def compute_laplacian(W):
     D = cp.diag(W.sum(axis=1))  # Ma trận đường chéo
     L = D - W
-    logging.info("Kích thước ma trận đường chéo (D):", D.shape)
-    logging.info("Mẫu của D (9x9 phần tử đầu):\n", D[:9, :9])
-    logging.info("Kích thước ma trận Laplace (L):", L.shape)
-    logging.info("Mẫu của L (9x9 phần tử đầu):\n", L[:9, :9])
     
     return L, D
 
@@ -70,11 +81,9 @@ def compute_eigen(L, k=2):
 def assign_labels(eigen_vectors, k):
     # Chuyen du lieu ve CPU de dung K-Means
     eigen_vectors_cpu = eigen_vectors.get()
-    logging.info(f"Mau cua vector rieng (9 hang dau):\n{eigen_vectors_cpu[:9, :]}")
 
     kmeans = KMeans(n_clusters=k, random_state=0).fit(eigen_vectors_cpu)
     labels = kmeans.labels_
-    logging.info(f"Nhan gan cho 27 pixel dau tien: {labels[:27]}")
     return cp.array(labels)  # Chuyen lai ve GPU
 
 # 5. Hien thi ket qua
@@ -103,11 +112,12 @@ def display_segmentation(image, labels, k):
     plt.show()
 
 # 6. Ket hop toan bo
-def normalized_cuts(image_path, k=2):
+def normalized_cuts(lan, imagename, image_path, output_path):
     
     # Tinh toan tren GPU
     start_gpu = time.time()
-    
+    logging.info(f"file name: {imagename}")
+    logging.info(f"Lan thu: {lan}")
     # Doc anh va chuan hoa
     image = io.imread(image_path)
     if image.ndim == 2:  # Neu la anh xam, chuyen thanh RGB
@@ -116,36 +126,40 @@ def normalized_cuts(image_path, k=2):
         image = image[:, :, :3]
     image = image / 255.0  # Chuan hoa ve [0, 1]
     
+    k=3
+
     # Tinh toan Ncuts
-    logging.info("Dang tinh toan ma tran trong so...")
+    start_cpu_coo = time.time()
     W = compute_weight_matrix(image)
+    end_cpu_coo = time.time()
     
-    logging.info("Dang tinh toan ma tran Laplace...")
     L, D = compute_laplacian(W)
     
-    logging.info("Dang tinh vector rieng...")
     eigen_vectors = compute_eigen(L, k=k)  # Tinh k vector rieng
     
-    logging.info("Dang phan vung do thi...")
     labels = assign_labels(eigen_vectors, k)  # Gan nhan cho moi diem anh
     
-    logging.info("Dang hien thi ket qua...")
 
     cp.cuda.Stream.null.synchronize()  # Dong bo hoa de dam bao GPU hoan thanh tinh toan
     end_gpu = time.time()
     logging.info(f"Thoi gian: {end_gpu - start_gpu} giay")
-
-    display_segmentation(image, labels, k)
+    logging.info(f"Thoi gian W: {end_cpu_coo - start_cpu_coo} giay")
+    
+    # ✅ Giải phóng bộ nhớ GPU sau khi sử dụng
+    del W, L, D, eigen_vectors
+    cp.get_default_memory_pool().free_all_blocks()
+    cp.get_default_pinned_memory_pool().free_all_blocks()
+    cp.cuda.Device(0).synchronize()  # Đảm bảo giải phóng hoàn toàn
 
 # 7. Mo file chon anh tu hop thoai
-def open_file_dialog():
-    # Tao cua so an cho tkinter
-    root = Tk()
-    root.withdraw()  # An cua so chinh
+# def open_file_dialog():
+#     # Tao cua so an cho tkinter
+#     root = Tk()
+#     root.withdraw()  # An cua so chinh
     
-    # Mo hop thoai chon file anh
-    file_path = askopenfilename(title="Chon anh", filetypes=[("Image Files", "*.jpg;*.jpeg;*.png;*.bmp")])
-    return file_path   
+#     # Mo hop thoai chon file anh
+#     file_path = askopenfilename(title="Chon anh", filetypes=[("Image Files", "*.jpg;*.jpeg;*.png;*.bmp")])
+#     return file_path   
 
 """ # 8. Chay thu nghiem
 if __name__ == "__main__":

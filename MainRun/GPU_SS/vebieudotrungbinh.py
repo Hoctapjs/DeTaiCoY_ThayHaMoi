@@ -82,10 +82,10 @@ def plot_bar_chart(average_times, overall_average):
 
     plt.figure(figsize=(10, 6))
     plt.bar(x, avg_thoi_gian, width=0.4, label="Thời gian trung bình", color='b', align='center')
-    plt.bar(x, avg_thoi_gian_coo, width=0.4, label="Thời gian trung bình COO", color='g', align='edge')
+    plt.bar(x, avg_thoi_gian_coo, width=0.4, label="Thời gian trung bình W", color='g', align='edge')
     
     plt.axhline(y=overall_average["overall_average_thoi_gian"], color='r', linestyle='--', label="TB thời gian toàn bộ")
-    plt.axhline(y=overall_average["overall_average_thoi_gian_coo"], color='y', linestyle='--', label="TB thời gian COO toàn bộ")
+    plt.axhline(y=overall_average["overall_average_thoi_gian_coo"], color='y', linestyle='--', label="TB thời gian W toàn bộ")
     
     plt.xticks(x, file_names, rotation=45, ha='right')
     plt.xlabel("File")

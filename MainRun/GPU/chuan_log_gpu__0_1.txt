@@ -1,0 +1,200 @@
+2025-02-16 10:12:33,576 - INFO - file name: resized_image_50x50.png
+2025-02-16 10:12:33,576 - INFO - Lan thu: 0
+2025-02-16 10:12:37,476 - INFO - Thoi gian: 3.900379180908203 giay
+2025-02-16 10:12:37,476 - INFO - Thoi gian W: 2.0004613399505615 giay
+2025-02-16 10:12:37,494 - INFO - file name: resized_image_55x55.png
+2025-02-16 10:12:37,494 - INFO - Lan thu: 0
+2025-02-16 10:12:39,200 - INFO - Thoi gian: 1.7065308094024658 giay
+2025-02-16 10:12:39,200 - INFO - Thoi gian W: 0.45281362533569336 giay
+2025-02-16 10:12:39,216 - INFO - file name: resized_image_60x60.png
+2025-02-16 10:12:39,216 - INFO - Lan thu: 0
+2025-02-16 10:12:40,782 - INFO - Thoi gian: 1.5662622451782227 giay
+2025-02-16 10:12:40,782 - INFO - Thoi gian W: 0.6100401878356934 giay
+2025-02-16 10:12:40,814 - INFO - file name: resized_image_65x65.png
+2025-02-16 10:12:40,814 - INFO - Lan thu: 0
+2025-02-16 10:12:42,845 - INFO - Thoi gian: 2.0310070514678955 giay
+2025-02-16 10:12:42,845 - INFO - Thoi gian W: 0.8919527530670166 giay
+2025-02-16 10:12:42,892 - INFO - file name: resized_image_70x70.png
+2025-02-16 10:12:42,892 - INFO - Lan thu: 0
+2025-02-16 10:12:45,968 - INFO - Thoi gian: 3.0757956504821777 giay
+2025-02-16 10:12:45,968 - INFO - Thoi gian W: 1.2195463180541992 giay
+2025-02-16 10:12:46,003 - INFO - file name: resized_image_75x75.png
+2025-02-16 10:12:46,003 - INFO - Lan thu: 0
+2025-02-16 10:12:50,011 - INFO - Thoi gian: 4.007894992828369 giay
+2025-02-16 10:12:50,027 - INFO - Thoi gian W: 1.2677202224731445 giay
+2025-02-16 10:12:50,058 - INFO - file name: resized_image_80x80.png
+2025-02-16 10:12:50,058 - INFO - Lan thu: 0
+2025-02-16 10:12:54,612 - INFO - Thoi gian: 4.553555250167847 giay
+2025-02-16 10:12:54,612 - INFO - Thoi gian W: 2.1137678623199463 giay
+2025-02-16 10:12:54,721 - INFO - file name: resized_image_85x85.png
+2025-02-16 10:12:54,721 - INFO - Lan thu: 0
+2025-02-16 10:13:00,445 - INFO - Thoi gian: 5.723589658737183 giay
+2025-02-16 10:13:00,445 - INFO - Thoi gian W: 2.1821165084838867 giay
+2025-02-16 10:13:00,554 - INFO - file name: resized_image_90x90.png
+2025-02-16 10:13:00,554 - INFO - Lan thu: 0
+2025-02-16 10:13:07,250 - INFO - Thoi gian: 6.696053504943848 giay
+2025-02-16 10:13:07,261 - INFO - Thoi gian W: 3.087151288986206 giay
+2025-02-16 10:13:07,355 - INFO - file name: resized_image_95x95.png
+2025-02-16 10:13:07,355 - INFO - Lan thu: 0
+2025-02-16 10:13:15,722 - INFO - Thoi gian: 8.366530418395996 giay
+2025-02-16 10:13:15,722 - INFO - Thoi gian W: 3.900620222091675 giay
+2025-02-16 10:13:15,910 - INFO - file name: resized_image_50x50.png
+2025-02-16 10:13:15,910 - INFO - Lan thu: 1
+2025-02-16 10:13:16,958 - INFO - Thoi gian: 1.0488998889923096 giay
+2025-02-16 10:13:16,958 - INFO - Thoi gian W: 0.351362943649292 giay
+2025-02-16 10:13:16,970 - INFO - file name: resized_image_55x55.png
+2025-02-16 10:13:16,970 - INFO - Lan thu: 1
+2025-02-16 10:13:18,592 - INFO - Thoi gian: 1.6224284172058105 giay
+2025-02-16 10:13:18,592 - INFO - Thoi gian W: 0.5136053562164307 giay
+2025-02-16 10:13:18,608 - INFO - file name: resized_image_60x60.png
+2025-02-16 10:13:18,608 - INFO - Lan thu: 1
+2025-02-16 10:13:20,203 - INFO - Thoi gian: 1.5947556495666504 giay
+2025-02-16 10:13:20,203 - INFO - Thoi gian W: 0.4959590435028076 giay
+2025-02-16 10:13:20,235 - INFO - file name: resized_image_65x65.png
+2025-02-16 10:13:20,235 - INFO - Lan thu: 1
+2025-02-16 10:13:22,110 - INFO - Thoi gian: 1.8753094673156738 giay
+2025-02-16 10:13:22,110 - INFO - Thoi gian W: 0.7493648529052734 giay
+2025-02-16 10:13:22,158 - INFO - file name: resized_image_70x70.png
+2025-02-16 10:13:22,158 - INFO - Lan thu: 1
+2025-02-16 10:13:25,061 - INFO - Thoi gian: 2.9029369354248047 giay
+2025-02-16 10:13:25,061 - INFO - Thoi gian W: 0.9879341125488281 giay
+2025-02-16 10:13:25,092 - INFO - file name: resized_image_75x75.png
+2025-02-16 10:13:25,092 - INFO - Lan thu: 1
+2025-02-16 10:13:28,976 - INFO - Thoi gian: 3.8839967250823975 giay
+2025-02-16 10:13:28,976 - INFO - Thoi gian W: 1.2590782642364502 giay
+2025-02-16 10:13:29,008 - INFO - file name: resized_image_80x80.png
+2025-02-16 10:13:29,008 - INFO - Lan thu: 1
+2025-02-16 10:13:33,457 - INFO - Thoi gian: 4.448521375656128 giay
+2025-02-16 10:13:33,457 - INFO - Thoi gian W: 2.068434476852417 giay
+2025-02-16 10:13:33,566 - INFO - file name: resized_image_85x85.png
+2025-02-16 10:13:33,566 - INFO - Lan thu: 1
+2025-02-16 10:13:39,081 - INFO - Thoi gian: 5.514429807662964 giay
+2025-02-16 10:13:39,081 - INFO - Thoi gian W: 2.178266763687134 giay
+2025-02-16 10:13:39,191 - INFO - file name: resized_image_90x90.png
+2025-02-16 10:13:39,191 - INFO - Lan thu: 1
+2025-02-16 10:13:45,990 - INFO - Thoi gian: 6.799707412719727 giay
+2025-02-16 10:13:45,990 - INFO - Thoi gian W: 3.0483598709106445 giay
+2025-02-16 10:13:46,087 - INFO - file name: resized_image_95x95.png
+2025-02-16 10:13:46,100 - INFO - Lan thu: 1
+2025-02-16 10:13:54,871 - INFO - Thoi gian: 8.784460067749023 giay
+2025-02-16 10:13:54,871 - INFO - Thoi gian W: 4.178242921829224 giay
+2025-02-16 10:13:55,075 - INFO - file name: resized_image_50x50.png
+2025-02-16 10:13:55,075 - INFO - Lan thu: 2
+2025-02-16 10:13:56,158 - INFO - Thoi gian: 1.0833749771118164 giay
+2025-02-16 10:13:56,158 - INFO - Thoi gian W: 0.3711073398590088 giay
+2025-02-16 10:13:56,166 - INFO - file name: resized_image_55x55.png
+2025-02-16 10:13:56,166 - INFO - Lan thu: 2
+2025-02-16 10:13:57,742 - INFO - Thoi gian: 1.5755834579467773 giay
+2025-02-16 10:13:57,742 - INFO - Thoi gian W: 0.4910240173339844 giay
+2025-02-16 10:13:57,761 - INFO - file name: resized_image_60x60.png
+2025-02-16 10:13:57,761 - INFO - Lan thu: 2
+2025-02-16 10:13:59,195 - INFO - Thoi gian: 1.4334871768951416 giay
+2025-02-16 10:13:59,195 - INFO - Thoi gian W: 0.49356818199157715 giay
+2025-02-16 10:13:59,201 - INFO - file name: resized_image_65x65.png
+2025-02-16 10:13:59,201 - INFO - Lan thu: 2
+2025-02-16 10:14:01,131 - INFO - Thoi gian: 1.9297988414764404 giay
+2025-02-16 10:14:01,131 - INFO - Thoi gian W: 0.7247097492218018 giay
+2025-02-16 10:14:01,159 - INFO - file name: resized_image_70x70.png
+2025-02-16 10:14:01,159 - INFO - Lan thu: 2
+2025-02-16 10:14:03,974 - INFO - Thoi gian: 2.8152356147766113 giay
+2025-02-16 10:14:03,974 - INFO - Thoi gian W: 0.985741376876831 giay
+2025-02-16 10:14:04,009 - INFO - file name: resized_image_75x75.png
+2025-02-16 10:14:04,009 - INFO - Lan thu: 2
+2025-02-16 10:14:07,836 - INFO - Thoi gian: 3.8267509937286377 giay
+2025-02-16 10:14:07,836 - INFO - Thoi gian W: 1.253391981124878 giay
+2025-02-16 10:14:07,865 - INFO - file name: resized_image_80x80.png
+2025-02-16 10:14:07,865 - INFO - Lan thu: 2
+2025-02-16 10:14:12,454 - INFO - Thoi gian: 4.588550090789795 giay
+2025-02-16 10:14:12,454 - INFO - Thoi gian W: 2.139500617980957 giay
+2025-02-16 10:14:12,515 - INFO - file name: resized_image_85x85.png
+2025-02-16 10:14:12,515 - INFO - Lan thu: 2
+2025-02-16 10:14:18,372 - INFO - Thoi gian: 5.856848239898682 giay
+2025-02-16 10:14:18,372 - INFO - Thoi gian W: 2.1850128173828125 giay
+2025-02-16 10:14:18,469 - INFO - file name: resized_image_90x90.png
+2025-02-16 10:14:18,469 - INFO - Lan thu: 2
+2025-02-16 10:14:25,251 - INFO - Thoi gian: 6.78182053565979 giay
+2025-02-16 10:14:25,251 - INFO - Thoi gian W: 3.014434814453125 giay
+2025-02-16 10:14:25,353 - INFO - file name: resized_image_95x95.png
+2025-02-16 10:14:25,353 - INFO - Lan thu: 2
+2025-02-16 10:14:33,859 - INFO - Thoi gian: 8.505816221237183 giay
+2025-02-16 10:14:33,862 - INFO - Thoi gian W: 3.86108660697937 giay
+2025-02-16 10:14:34,047 - INFO - file name: resized_image_50x50.png
+2025-02-16 10:14:34,047 - INFO - Lan thu: 3
+2025-02-16 10:14:35,080 - INFO - Thoi gian: 1.03236985206604 giay
+2025-02-16 10:14:35,080 - INFO - Thoi gian W: 0.3588724136352539 giay
+2025-02-16 10:14:35,082 - INFO - file name: resized_image_55x55.png
+2025-02-16 10:14:35,082 - INFO - Lan thu: 3
+2025-02-16 10:14:36,589 - INFO - Thoi gian: 1.5075263977050781 giay
+2025-02-16 10:14:36,589 - INFO - Thoi gian W: 0.50762939453125 giay
+2025-02-16 10:14:36,598 - INFO - file name: resized_image_60x60.png
+2025-02-16 10:14:36,598 - INFO - Lan thu: 3
+2025-02-16 10:14:38,191 - INFO - Thoi gian: 1.59324312210083 giay
+2025-02-16 10:14:38,191 - INFO - Thoi gian W: 0.5151667594909668 giay
+2025-02-16 10:14:38,210 - INFO - file name: resized_image_65x65.png
+2025-02-16 10:14:38,210 - INFO - Lan thu: 3
+2025-02-16 10:14:40,099 - INFO - Thoi gian: 1.8889820575714111 giay
+2025-02-16 10:14:40,099 - INFO - Thoi gian W: 0.7442116737365723 giay
+2025-02-16 10:14:40,124 - INFO - file name: resized_image_70x70.png
+2025-02-16 10:14:40,124 - INFO - Lan thu: 3
+2025-02-16 10:14:42,890 - INFO - Thoi gian: 2.7660410404205322 giay
+2025-02-16 10:14:42,890 - INFO - Thoi gian W: 0.9999270439147949 giay
+2025-02-16 10:14:42,914 - INFO - file name: resized_image_75x75.png
+2025-02-16 10:14:42,914 - INFO - Lan thu: 3
+2025-02-16 10:14:46,687 - INFO - Thoi gian: 3.773293972015381 giay
+2025-02-16 10:14:46,687 - INFO - Thoi gian W: 1.2688558101654053 giay
+2025-02-16 10:14:46,721 - INFO - file name: resized_image_80x80.png
+2025-02-16 10:14:46,721 - INFO - Lan thu: 3
+2025-02-16 10:14:51,276 - INFO - Thoi gian: 4.55499792098999 giay
+2025-02-16 10:14:51,276 - INFO - Thoi gian W: 2.1061313152313232 giay
+2025-02-16 10:14:51,345 - INFO - file name: resized_image_85x85.png
+2025-02-16 10:14:51,345 - INFO - Lan thu: 3
+2025-02-16 10:14:57,237 - INFO - Thoi gian: 5.892019748687744 giay
+2025-02-16 10:14:57,237 - INFO - Thoi gian W: 2.2348849773406982 giay
+2025-02-16 10:14:57,324 - INFO - file name: resized_image_90x90.png
+2025-02-16 10:14:57,324 - INFO - Lan thu: 3
+2025-02-16 10:15:03,796 - INFO - Thoi gian: 6.47273588180542 giay
+2025-02-16 10:15:03,796 - INFO - Thoi gian W: 2.825901508331299 giay
+2025-02-16 10:15:03,885 - INFO - file name: resized_image_95x95.png
+2025-02-16 10:15:03,885 - INFO - Lan thu: 3
+2025-02-16 10:15:12,099 - INFO - Thoi gian: 8.21417236328125 giay
+2025-02-16 10:15:12,099 - INFO - Thoi gian W: 3.883359909057617 giay
+2025-02-16 10:15:12,272 - INFO - file name: resized_image_50x50.png
+2025-02-16 10:15:12,272 - INFO - Lan thu: 4
+2025-02-16 10:15:13,327 - INFO - Thoi gian: 1.055527687072754 giay
+2025-02-16 10:15:13,327 - INFO - Thoi gian W: 0.3163149356842041 giay
+2025-02-16 10:15:13,341 - INFO - file name: resized_image_55x55.png
+2025-02-16 10:15:13,341 - INFO - Lan thu: 4
+2025-02-16 10:15:14,836 - INFO - Thoi gian: 1.49552321434021 giay
+2025-02-16 10:15:14,836 - INFO - Thoi gian W: 0.4980485439300537 giay
+2025-02-16 10:15:14,852 - INFO - file name: resized_image_60x60.png
+2025-02-16 10:15:14,855 - INFO - Lan thu: 4
+2025-02-16 10:15:16,416 - INFO - Thoi gian: 1.5646553039550781 giay
+2025-02-16 10:15:16,416 - INFO - Thoi gian W: 0.48363447189331055 giay
+2025-02-16 10:15:16,423 - INFO - file name: resized_image_65x65.png
+2025-02-16 10:15:16,423 - INFO - Lan thu: 4
+2025-02-16 10:15:18,287 - INFO - Thoi gian: 1.8640756607055664 giay
+2025-02-16 10:15:18,287 - INFO - Thoi gian W: 0.7583663463592529 giay
+2025-02-16 10:15:18,313 - INFO - file name: resized_image_70x70.png
+2025-02-16 10:15:18,313 - INFO - Lan thu: 4
+2025-02-16 10:15:21,032 - INFO - Thoi gian: 2.718656063079834 giay
+2025-02-16 10:15:21,032 - INFO - Thoi gian W: 0.9899125099182129 giay
+2025-02-16 10:15:21,062 - INFO - file name: resized_image_75x75.png
+2025-02-16 10:15:21,062 - INFO - Lan thu: 4
+2025-02-16 10:15:25,158 - INFO - Thoi gian: 4.096539735794067 giay
+2025-02-16 10:15:25,158 - INFO - Thoi gian W: 1.2594735622406006 giay
+2025-02-16 10:15:25,186 - INFO - file name: resized_image_80x80.png
+2025-02-16 10:15:25,186 - INFO - Lan thu: 4
+2025-02-16 10:15:29,810 - INFO - Thoi gian: 4.624125003814697 giay
+2025-02-16 10:15:29,810 - INFO - Thoi gian W: 2.1507275104522705 giay
+2025-02-16 10:15:29,899 - INFO - file name: resized_image_85x85.png
+2025-02-16 10:15:29,899 - INFO - Lan thu: 4
+2025-02-16 10:15:35,674 - INFO - Thoi gian: 5.775228023529053 giay
+2025-02-16 10:15:35,674 - INFO - Thoi gian W: 2.1925582885742188 giay
+2025-02-16 10:15:35,783 - INFO - file name: resized_image_90x90.png
+2025-02-16 10:15:35,783 - INFO - Lan thu: 4
+2025-02-16 10:15:42,262 - INFO - Thoi gian: 6.47870135307312 giay
+2025-02-16 10:15:42,262 - INFO - Thoi gian W: 2.9732248783111572 giay
+2025-02-16 10:15:42,371 - INFO - file name: resized_image_95x95.png
+2025-02-16 10:15:42,371 - INFO - Lan thu: 4
+2025-02-16 10:15:50,950 - INFO - Thoi gian: 8.578620195388794 giay
+2025-02-16 10:15:50,950 - INFO - Thoi gian W: 3.9446160793304443 giay
