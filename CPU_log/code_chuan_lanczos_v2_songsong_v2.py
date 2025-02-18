@@ -180,7 +180,6 @@ def compute_eigen(L, D, k=2):
     return eigvecs_original
 
 # 4. Gan nhan cho tung diem anh dua tren vector rieng
-# 4. Gan nhan cho tung diem anh dua tren vector rieng
 def assign_labels(eigen_vectors, k):
     return KMeans(n_clusters=k, random_state=0).fit(eigen_vectors).labels_
 

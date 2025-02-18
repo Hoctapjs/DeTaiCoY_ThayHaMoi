@@ -117,6 +117,10 @@ def handle_dot(a, b):
     """Tính tích vô hướng của hai vector song song hóa"""
     return np.sum(a * b)  # NumPy đã tối ưu hóa, nhưng có thể dùng joblib nếu cần
 
+def matrix_vector_product(A, v):  
+    """Hàm nhân ma trận với vector"""  
+    return A @ v  
+
 def Lanczos(A, v, m):
     n = len(v)
     V = np.zeros((m, n))
@@ -124,7 +128,7 @@ def Lanczos(A, v, m):
     V[0, :] = v / np.linalg.norm(v)
     
     start = time.time()
-    w = A @ V[0, :]  # Nhân ma trận - vector
+    w = matrix_vector_product(A, V[0, :])
     end = time.time()
     logging.info(f"Thoi gian nhan ma tran - vector (song song): {end - start:.6f} giay")
     

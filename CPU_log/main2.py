@@ -5,7 +5,8 @@
 # import code_chuan_lanczos_v2 as codechuan  # Import file chứa các hàm cần sử dụng
 # import code_chuan_lanczos_v2_original as codechuan  # Import file chứa các hàm cần sử dụng - giống bản v2 ở trên nhưng copy ra để test - thay thêm hàm kiemthuchaynhieulan với lại hàm normalized_cuts, save_segmentation và assign_labels
 # import code_chuan_lanczos_v2_songsong as codechuan  # Import file chứa các hàm cần sử dụng
-import code_chuan_lanczos_v2_songsong_v2 as codechuan  # Import file chứa các hàm cần sử dụng
+# import code_chuan_lanczos_v2_songsong_v2 as codechuan  # Import file chứa các hàm cần sử dụng
+import code_chuan_lanczos_v2_songsong_v4 as codechuan  # Import file chứa các hàm cần sử dụng
 # import code_chuan_lanczos_v2_QR as codechuan  # Import file chứa các hàm cần sử dụng
 # import code_chuan_COO_His as codechuan  # Import file chứa các hàm cần sử dụng
 # import code_chuan_coo_his_chuanhoa as codechuan  # Import file chứa các hàm cần sử dụng
@@ -24,7 +25,8 @@ def kiemThuChayNhieuLanMain(solan):
     chuoi = input("Nhập vào tên file log: ")
     # folder_path = input("Nhập vào đường dẫn thư mục chứa ảnh: ")
     # Đường dẫn tương đối đến một tệp
-    relative_path = "resized_image_files_copy"
+    # relative_path = "resized_image_files_copy"
+    relative_path = "img_large"
     # relative_path = "image_data_60"
 
     # Chuyển đổi thành đường dẫn tuyệt đối
