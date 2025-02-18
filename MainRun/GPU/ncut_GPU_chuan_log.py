@@ -52,10 +52,13 @@ def compute_weight_matrix(image, sigma_i=0.1, sigma_x=10):
 
     
     # Tinh ma tran trong so bang vector hoa
+    # tính thời gian - 1 hình - 10 lần 50 70 90 (tối thiểu) - 10 ảnh
+    # start
     W_color = cp.array(rbf_kernel(features.get(), gamma=1 / (2 * sigma_i**2)))
     W_space = cp.array(rbf_kernel(coords.get(), gamma=1 / (2 * sigma_x**2)))
+    # end
     W = W_color * W_space
-
+    # end đo thời gian W
     return W
 
 # 2. Tinh ma tran Laplace

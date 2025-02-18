@@ -19,7 +19,7 @@ def parse_log_file(file_path):
             match_file = re.search(r"file name: (\S+)", line)
             match_lan = re.search(r"Lan thu: (\d+)", line)
             match_time = re.search(r"Thoi gian: ([\d.]+)", line)
-            match_time_coo = re.search(r"Thoi gian COO: ([\d.]+)", line)
+            match_time_coo = re.search(r"Thoi gian W: ([\d.]+)", line)
 
             if match_file:
                 if current_entry:

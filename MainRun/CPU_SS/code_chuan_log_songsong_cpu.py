@@ -102,7 +102,7 @@ def normalized_cuts(lan, imagename, image_path, output_path):
     image = io.imread(image_path)
     image = color.gray2rgb(image) if image.ndim == 2 else image[:, :, :3] if image.shape[2] == 4 else image
     image = image / 255.0
-    k = 3
+    k = 4
     start_cpu_coo = time.time()
     W = compute_weight_matrix(image)
     end_cpu_coo = time.time()
