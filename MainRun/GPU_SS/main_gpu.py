@@ -1,9 +1,9 @@
 
-import ncut_GPU_lanczos_mul as codechuan  # Import file chứa các hàm cần sử dụng
+import ncut_GPU_lanczos_coo as codechuan  # Import file chứa các hàm cần sử dụng
 import os
 
 # Đường dẫn tương đối đến một tệp
-relative_path = "GPU_SS\image"
+relative_path = "GPU_SS\image_W2"
 
 # Chuyển đổi thành đường dẫn tuyệt đối
 absolute_path = os.path.abspath(relative_path)
@@ -12,7 +12,7 @@ def kiemThuChayNhieuLanMain(solan):
     chuoi = input("Nhập vào tên file log: ")
     # folder_path = input("Nhập vào đường dẫn thư mục chứa ảnh: ")
     # Đường dẫn tương đối đến một tệp
-    relative_path = "image"
+    relative_path = "image_2"
 
     # Chuyển đổi thành đường dẫn tuyệt đối
     absolute_path = os.path.abspath(relative_path)

@@ -1,0 +1,17 @@
+Thời gian trung bình của từng ảnh:
+
+100.jpg: 2.3110 giây (Lanczos) | 3.4843 giây (COO)
+105.jpg: 2.7156 giây (Lanczos) | 4.0330 giây (COO)
+110.jpg: 3.7018 giây (Lanczos) | 5.8192 giây (COO)
+115.jpg: 4.2528 giây (Lanczos) | 6.0652 giây (COO)
+120.jpg: 5.4515 giây (Lanczos) | 7.7515 giây (COO)
+125.jpg: 7.4804 giây (Lanczos) | 8.8925 giây (COO)
+75.jpg: 0.7828 giây (Lanczos) | 1.2223 giây (COO)
+80.jpg: 0.1876 giây (Lanczos) | 1.6060 giây (COO)
+85.jpg: 0.6889 giây (Lanczos) | 1.6358 giây (COO)
+90.jpg: 1.6269 giây (Lanczos) | 2.0852 giây (COO)
+95.jpg: 0.4659 giây (Lanczos) | 2.8988 giây (COO)
+
+Thời gian trung bình của cả thư mục:
+Lanczos: 2.6968 giây
+COO: 4.1358 giây

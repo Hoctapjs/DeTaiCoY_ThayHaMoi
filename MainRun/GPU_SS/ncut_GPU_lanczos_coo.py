@@ -13,7 +13,7 @@ from tkinter.filedialog import askopenfilename
 import logging
 import os
 import re
-
+from cupyx.scipy.sparse import coo_matrix
 
 
 import pandas as pd
@@ -85,36 +85,54 @@ def kiemThuChayNhieuLan(i, name, folder_path):
 # ĐÂY LÀ CÁCH CHẠY MA TRẬN TRỌNG SỐ W TRÊN GPU THEO LOGIC GIỐNG BÊN CPU
 def compute_weight_matrix(image, sigma_i=0.1, sigma_x=10):
     h, w, c = image.shape
-    # logging.info(f"Kích thước ảnh: {h}x{w}x{c}")
+    coords = cp.array(cp.meshgrid(cp.arange(h), cp.arange(w))).reshape(2, -1).T  # Tọa độ (x, y)
+    features = image.reshape(-1, c)  # Đặc trưng màu
 
-    # Tọa độ (x, y)
-    coords = cp.array(cp.meshgrid(cp.arange(h), cp.arange(w))).reshape(2, -1).T
+    # logging.info(f"Kich thuoc anh: {h}x{w}x{c}")
+    # logging.info(f"Kich thuoc dac trung mau: {features.shape}, Kich thuoc toa do: {coords.shape}")
+    # logging.info(f"Dac trung mau:\n{features[:9, :9]}")
+    # logging.info(f"Toa do:\n{coords[:9, :9]}")
 
-    # Đặc trưng màu
-    features = cp.array(image).reshape(-1, c)
+    start_cpu_coo=time.time()
+    # Tính độ tương đồng về đặc trưng và không gian
+    W_features = rbf_kernel(cp.asnumpy(features), gamma=1/(2 * sigma_i**2))  # Chuyển dữ liệu từ GPU sang CPU
+    W_coords = rbf_kernel(cp.asnumpy(coords), gamma=1/(2 * sigma_x**2))  # Chuyển dữ liệu từ GPU sang CPU
 
-    # logging.info(f"Kích thước đặc trưng màu: {features.shape}, Kích thước tọa độ: {coords.shape}")
-    # logging.info(f"Đặc trưng màu (9 phần tử đầu):\n{features[:9, :9]}")
-    # logging.info(f"Tọa độ (9 phần tử đầu):\n{coords[:9, :9]}")
+    # Chuyển kết quả từ NumPy (CPU) sang CuPy (GPU)
+    W_features = cp.asarray(W_features)
+    W_coords = cp.asarray(W_coords)
+    end_cpu_coo=time.time()
 
-    # Tính ma trận trọng số bằng vector hóa
-    W_color = cp.array(rbf_kernel(features.get(), gamma=1 / (2 * sigma_i**2)))
-    W_space = cp.array(rbf_kernel(coords.get(), gamma=1 / (2 * sigma_x**2)))
-    W = W_color * W_space
+    logging.info(f"Thoi gian COO: {end_cpu_coo - start_cpu_coo} giay")
 
-    # logging.info(f"Mảnh của W (9x9 phần tử đầu):\n{W[:9, :9]}")
-    return W
+    W = cp.multiply(W_features, W_coords)  # Phép nhân phần tử của ma trận trên GPU
+
+    # Chuyển thành ma trận thưa dạng COO
+    W_sparse = coo_matrix(W)
+
+    # logging.info(f"Kich thuoc ma tran trong so (W): {W.shape}")
+    # logging.info(f"Kich thuoc ma tran thua (W_sparse): {W_sparse.shape}")
+    # logging.info(f"So luong phan tu khac 0: {W_sparse.nnz}")
+    # logging.info(f"Mau cua W_features (9x9 phan tu dau):\n{W_features[:9, :9]}")
+    # logging.info(f"Mau cua W_coords (9x9 phan tu dau):\n{W_coords[:9, :9]}")
+    # logging.info(f"Mau cua W (9x9 phan tu dau):\n{W[:9, :9]}")
+
+    return W_sparse
+
+
+
 
 
 # 2. Tinh ma tran Laplace
-def compute_laplacian(W):
-    D = cp.diag(W.sum(axis=1))  # Ma trận đường chéo
-    L = D - W
-    # logging.info("Kích thước ma trận đường chéo (D):", D.shape)
-    # logging.info("Mẫu của D (9x9 phần tử đầu):\n", D[:9, :9])
-    # logging.info("Kích thước ma trận Laplace (L):", L.shape)
-    # logging.info("Mẫu của L (9x9 phần tử đầu):\n", L[:9, :9])
-    
+def compute_laplacian(W_sparse):
+    # Tổng của các hàng trong ma trận W
+    D_diag = W_sparse.sum(axis=1).get().flatten()  # Tính tổng các hàng
+    D = cp.diag(D_diag)  # Tạo ma trận đường chéo từ tổng hàng
+    L = D - W_sparse  # L = D - W
+    # logging.info("Kich thuoc ma tran duong cheo (D): %s", D.shape)
+    # logging.info("Mau cua D (9 phan tu dau):\n%s", D_diag[:9])  # In phần tử trên đường chéo
+    # logging.info("Kich thuoc ma tran Laplace (L): %s", L.shape)
+    # logging.info("Mau cua L (9x9 phan tu dau):\n%s", L[:9, :9])
     return L, D
 
 # 3. Giai bai toan tri rieng

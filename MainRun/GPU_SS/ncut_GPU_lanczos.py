@@ -15,75 +15,43 @@ import os
 import re
 
 
-def process_logs_for_summary(name):
+
+import pandas as pd
+
+def process_logs_for_summary(name, results, run_index):
     """
-    Xử lý log file để tính thời gian trung bình của từng ảnh và toàn bộ thư mục.
+    Lưu kết quả vào file Excel, đảm bảo mỗi lần chạy có sheet riêng.
+    Cập nhật sheet "Tóm tắt" để chỉ chứa trung bình các thời gian của mỗi ảnh.
     """
-    time_per_image = {}
-    coo_time_per_image = {}
+    excel_file = f"{name}_summary.xlsx"
+    
+    # Chuyển dữ liệu về DataFrame
+    df = pd.DataFrame(results, columns=["Ảnh", "Lần chạy", "Thời gian Lanczos", "Thời gian COO"])
+    
+    # Mở file để ghi dữ liệu
+    with pd.ExcelWriter(excel_file, engine="openpyxl", mode="a" if os.path.exists(excel_file) else "w") as writer:
+        sheet_name = f"Sheet {run_index}"  # Tạo sheet theo số lần chạy
+        df.to_excel(writer, sheet_name=sheet_name, index=False)
 
-    log_files = [f for f in os.listdir() if f.startswith(name) and f.endswith(".txt") and "summary" not in f]
+    # Đọc lại toàn bộ dữ liệu từ các sheet để cập nhật "Tóm tắt"
+    all_data = []
+    with pd.ExcelFile(excel_file) as xls:
+        for sheet in xls.sheet_names:
+            if sheet.startswith("Sheet "):  # Chỉ lấy dữ liệu từ các lần chạy
+                all_data.append(pd.read_excel(xls, sheet_name=sheet))
 
-    for log_file in log_files:
-        with open(log_file, "r", encoding="utf-8") as f:
-            last_coo_time = None
-            last_time = None
-            last_image = None
+    if all_data:
+        full_df = pd.concat(all_data, ignore_index=True)
+        summary = full_df.groupby("Ảnh").agg({
+            "Thời gian Lanczos": "mean",
+            "Thời gian COO": "mean"
+        }).reset_index()
 
-            for line in f:
-                match_coo = re.search(r"Thoi gian COO: ([\d.]+) giay", line)
-                if match_coo:
-                    last_coo_time = float(match_coo.group(1))
+        # 🛠 Sửa lỗi ghi đè bằng `if_sheet_exists="replace"`
+        with pd.ExcelWriter(excel_file, engine="openpyxl", mode="a", if_sheet_exists="replace") as writer:
+            summary.to_excel(writer, sheet_name="Tóm tắt", index=False)
 
-                match_time = re.search(r"Thoi gian: ([\d.]+) giay", line)
-                if match_time:
-                    last_time = float(match_time.group(1))
-
-                match_image = re.search(r"Anh (\d+\.jpg) lan \d+", line)
-                if match_image:
-                    last_image = match_image.group(1)
-
-                if last_image and last_coo_time is not None and last_time is not None:
-                    if last_image not in time_per_image:
-                        time_per_image[last_image] = {"total_time": 0, "count": 0}
-                        coo_time_per_image[last_image] = {"total_coo_time": 0, "count": 0}
-
-                    time_per_image[last_image]["total_time"] += last_time
-                    time_per_image[last_image]["count"] += 1
-
-                    coo_time_per_image[last_image]["total_coo_time"] += last_coo_time
-                    coo_time_per_image[last_image]["count"] += 1
-
-                    last_coo_time = None
-                    last_time = None
-                    last_image = None
-
-    avg_time_per_image = {
-        img: time["total_time"] / time["count"]
-        for img, time in time_per_image.items()
-    }
-
-    avg_coo_time_per_image = {
-        img: time["total_coo_time"] / time["count"]
-        for img, time in coo_time_per_image.items()
-    }
-
-    avg_time_folder = sum(avg_time_per_image.values()) / len(avg_time_per_image) if avg_time_per_image else 0
-    avg_coo_time_folder = sum(avg_coo_time_per_image.values()) / len(avg_coo_time_per_image) if avg_coo_time_per_image else 0
-
-    summary_log = f"{name}_summary.txt"
-    with open(summary_log, "w", encoding="utf-8") as f:
-        f.write("Thời gian trung bình của từng ảnh:\n\n")
-        for img in avg_time_per_image:
-            f.write(f"{img}: {avg_time_per_image[img]:.4f} giây (Lanczos) | {avg_coo_time_per_image[img]:.4f} giây (COO)\n")
-
-        f.write(f"\nThời gian trung bình của cả thư mục:\n")
-        f.write(f"Lanczos: {avg_time_folder:.4f} giây\n")
-        f.write(f"COO: {avg_coo_time_folder:.4f} giây\n")
-
-    print(f"📊 Đã lưu kết quả vào {summary_log}")
-
-
+    print(f"📊 Đã lưu kết quả lần chạy {run_index} vào {excel_file}")
 
 def kiemThuChayNhieuLan(i, name, folder_path):
     if not os.path.isdir(folder_path):
@@ -91,32 +59,27 @@ def kiemThuChayNhieuLan(i, name, folder_path):
         return
 
     image_files = [f for f in os.listdir(folder_path) if f.lower().endswith(('.png', '.jpg', '.jpeg'))]
-    
+
     if not image_files:
         print(f"❌ Không tìm thấy file ảnh nào trong {folder_path}!")
         return
 
-    # Danh sách lưu thời gian của mỗi ảnh
-    time_per_image = {img: [] for img in image_files}
+    results = []  # Lưu kết quả cho từng lần chạy
 
     for idx, file_name in enumerate(image_files, start=1):
         image_path = os.path.join(folder_path, file_name)
 
-        log_file = f"{name}_{i}_{idx}.txt"
-
-        # Cấu hình logging
-        logging.basicConfig(filename=log_file, level=logging.INFO,
-                            format='%(asctime)s - %(levelname)s - %(message)s')
-
         print(f"📷 Đang xử lý ảnh {idx}/{len(image_files)}: {image_path}")
 
-        # Gọi hàm xử lý ảnh
-        normalized_cuts(image_path)
+        # Gọi hàm xử lý ảnh và lấy thời gian
+        total_time, coo_time, lanczos_time = normalized_cuts(image_path)
 
-        # Ghi vào log
-        logging.info(f"Anh {file_name} lan {i+1}")
+        # Lưu kết quả
+        results.append([file_name, i + 1, lanczos_time, coo_time])
 
-    process_logs_for_summary(name)
+    process_logs_for_summary(name, results, i + 1)  # Truyền số lần chạy vào
+
+
 
 
 # ĐÂY LÀ CÁCH CHẠY MA TRẬN TRỌNG SỐ W TRÊN GPU THEO LOGIC GIỐNG BÊN CPU
@@ -224,15 +187,15 @@ def compute_eigen(L, D, k=2):
     # Áp dụng thuật toán Lanczos
     T, V = Lanczos(L_normalized, v0, m=k+5)  # Sử dụng m > k để tăng độ chính xác
     end_lan = time.time()
-    logging.info(f"Thoi gian: {end_lan - start_lan} giay")
-
+    # logging.info(f"Thoi gian lanczos: {end_lan - start_lan} giay")
+    lanczos_time = end_lan-start_lan;
     # Tính trị riêng và vector riêng của ma trận tam giác T
     eigvals, eigvecs_T = cp.linalg.eigh(T[:k, :k])
     
     # Chuyển đổi vector riêng về không gian gốc
     eigvecs_original = D_inv_sqrt @ (V[:k, :].T @ eigvecs_T)
     
-    return eigvecs_original
+    return eigvecs_original, lanczos_time
 
 # 4. Gan nhan cho tung diem anh duoc dua tren vector rieng
 def assign_labels(eigen_vectors, k):
@@ -272,40 +235,32 @@ def display_segmentation(image, labels, k):
 
 # 6. Ket hop toan bo
 def normalized_cuts(image_path, k=2):
-    
-    # Tinh tong tren GPU
     start_gpu = time.time()
-    
-    # Doc anh va chuan hoa
-    image = io.imread(image_path)
-    if image.ndim == 2:  # Neu la anh xam, chuyen thanh RGB
-        image = color.gray2rgb(image)
-    elif image.shape[2] == 4:  # Neu la anh RGBA, loai bo kenh alpha
-        image = image[:, :, :3]
-    image = image / 255.0  # Chuan hoa ve [0, 1]
-    
-    # Tinh toan Ncuts
-    start_cpu_coo = time.time()
-    # logging.info("Dang tinh toan ma tran trong so...")
-    W = compute_weight_matrix(image)
-    end_cpu_coo = time.time()
-    
-    # logging.info("Tinh Laplace...")
-    L, D = compute_laplacian(W)
-    
-    # logging.info("Tinh eigenvectors...")
-    eigen_vectors = compute_eigen(L,D, k=k)  # Tinh k vector rieng
-    
-    # logging.info("Phan vung do thi...")
-    labels = assign_labels(eigen_vectors, k)  # Gan nhan cho moi diem anh
-    
-    # logging.info("Hien thi ket qua...")
 
-    cp.cuda.Stream.null.synchronize()  # Dong bo hoa de dam bao GPU hoan thanh tinh toan
+    # Đọc ảnh
+    image = io.imread(image_path)
+    if image.ndim == 2:
+        image = color.gray2rgb(image)
+    elif image.shape[2] == 4:
+        image = image[:, :, :3]
+    image = image / 255.0
+
+    start_coo = time.time()
+    W = compute_weight_matrix(image)
+    end_coo = time.time()
+
+    L, D = compute_laplacian(W)
+    eigen_vectors,lanczos_time  = compute_eigen(L, D, k=k)
+    labels = assign_labels(eigen_vectors, k)
+
+    cp.cuda.Stream.null.synchronize()
     end_gpu = time.time()
-    logging.info(f"Thoi gian COO: {end_cpu_coo - start_cpu_coo} giay")
-    # logging.info(f"Thoi gian: {end_gpu - start_gpu} giay")
-    display_segmentation(image, labels, k)
+
+    total_time = end_gpu - start_gpu
+    coo_time = end_coo - start_coo
+
+    return total_time, coo_time, lanczos_time
+
 
 # 7. Mo file chon anh tu hop thoai
 def open_file_dialog():
