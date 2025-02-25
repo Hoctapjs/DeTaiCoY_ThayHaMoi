@@ -1,5 +1,5 @@
 """ import ncut_GPU_chuan_log as codechuan  # Import file chứa các hàm cần sử dụng """
-import gpu_excel as codechuan  # Import file chứa các hàm cần sử dụng
+import app as codechuan  # Import file chứa các hàm cần sử dụng
 # import code_caitien_histogram as codechuan  # Import file chứa các hàm cần sử dụng
 # import code_chuan_COO as codechuan  # Import file chứa các hàm cần sử dụng
 # import code_chuan_lanczos as codechuan  # Import file chứa các hàm cần sử dụng
@@ -11,6 +11,7 @@ import gpu_excel as codechuan  # Import file chứa các hàm cần sử dụng
 """ import code_caitien_histogram_mul as codechuan  # Import file chứa các hàm cần sử dụng """
 """ import code_caitien_histogram_mul_luu_ketqua_phandoan_vao_folder as codechuan  # Import file chứa các hàm cần sử dụng """
 import os
+import cupy as cp
 
 # # Đường dẫn tương đối đến một tệp
 # relative_path = "CPU_log\image_data"
