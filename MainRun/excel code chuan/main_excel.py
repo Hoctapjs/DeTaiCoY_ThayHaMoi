@@ -6,9 +6,9 @@ current_dir = os.path.dirname(os.path.abspath(__file__))
 
 # Thêm thư mục cần import vào sys.path
 # sys.path.append(os.path.join(current_dir, "01_W_CPU"))
-sys.path.append(os.path.join(current_dir, "02_W_CPU_SS"))
+# sys.path.append(os.path.join(current_dir, "02_W_CPU_SS"))
 # sys.path.append(os.path.join(current_dir, "03_W_GPU"))
-# sys.path.append(os.path.join(current_dir, "04_W_GPU_SS"))
+sys.path.append(os.path.join(current_dir, "04_W_GPU_SS"))
 
 # import lanczos_cpu as codechuan 
 # import lanczos_cpu_coo as codechuan 
@@ -28,7 +28,7 @@ def kiemThuChayNhieuLanMain(solan):
     if (kichthuocthumuc == 0) :
         relative_path = "resized_image_files"
     if (kichthuocthumuc == 10) :
-        relative_path = "resized_image_files_copy"
+        relative_path = "image"
 
     # Chuyển đổi thành đường dẫn tuyệt đối
     absolute_path = os.path.abspath(relative_path)
