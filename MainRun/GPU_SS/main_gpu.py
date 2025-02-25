@@ -1,5 +1,5 @@
 
-import ncut_GPU_lanczos_coo as codechuan  # Import file chứa các hàm cần sử dụng
+import ncut_GPU_lanczos_mul_coo as codechuan  # Import file chứa các hàm cần sử dụng
 import os
 
 # Đường dẫn tương đối đến một tệp
