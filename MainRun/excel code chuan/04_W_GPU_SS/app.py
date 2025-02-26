@@ -103,6 +103,7 @@ def compute_weight_matrix(image, sigma_i=0.1, sigma_x=10, threads_per_block=300)
 
     start_features = time.time()
     W_features = compute_rbf_matrix(features, gamma_i, threads_per_block)
+    cp.cuda.Stream.null.synchronize()
     end_features = time.time()
 
     W_features_time =  end_features - start_features
@@ -110,6 +111,7 @@ def compute_weight_matrix(image, sigma_i=0.1, sigma_x=10, threads_per_block=300)
     # tính thời gian w tọa độ
     start_coords = time.time()
     W_coords = compute_rbf_matrix(coords, gamma_x, threads_per_block)
+    cp.cuda.Stream.null.synchronize()
     end_coords = time.time()
 
     W_coords_time =  end_coords - start_coords
