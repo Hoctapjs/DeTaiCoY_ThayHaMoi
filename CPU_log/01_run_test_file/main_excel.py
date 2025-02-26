@@ -12,8 +12,8 @@ sys.path.append(os.path.join(current_dir, "04_lanczos_tri_rieng_CPU_COO_SS"))
 
 # import lanczos_cpu as codechuan 
 # import lanczos_cpu_coo as codechuan 
-# import lanczos_cpu_ss as codechuan 
 import lanczos_cpu_ss_coo as codechuan 
+# import lanczos_cpu as codechuan 
 
 
 def kiemThuChayNhieuLanMain(solan):
@@ -26,7 +26,7 @@ def kiemThuChayNhieuLanMain(solan):
     if (kichthuocthumuc == 100) :
         relative_path = "image_data_100"
     if (kichthuocthumuc == 0) :
-        relative_path = "resized_image_files"
+        relative_path = "image"
 
     # Chuyển đổi thành đường dẫn tuyệt đối
     absolute_path = os.path.abspath(relative_path)
