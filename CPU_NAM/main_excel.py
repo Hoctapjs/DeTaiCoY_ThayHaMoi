@@ -22,7 +22,7 @@ sys.path.append(os.path.join(current_dir, "Lanczos/01_SOSANHTRUCQUAN"))
 # TRUC QUAN
 # import cosongsong as codechuan 
 # import khongsongsong as codechuan 
-# import cosongsong_none_coo as codechuan 
+import cosongsong_none_coo as codechuan 
 # import cosongsong_none_coo as codechuan 
 
 

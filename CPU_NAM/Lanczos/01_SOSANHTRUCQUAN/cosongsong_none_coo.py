@@ -77,9 +77,14 @@ def compute_weight_matrix(image, sigma_i=0.1, sigma_x=10):
 
 # Tính ma trận Laplace
 def compute_laplacian(W_sparse):
-    D_diag = W_sparse.sum(axis=1).A.flatten()
+    # Kiểm tra xem W_sparse có phải là ma trận thưa không
+    if isspmatrix(W_sparse):
+        D_diag = W_sparse.sum(axis=1).A.flatten()  # Nếu là ma trận thưa, dùng .A
+    else:
+        D_diag = W_sparse.sum(axis=1).flatten()    # Nếu là mảng dày đặc, không cần .A
+    
     D = np.diag(D_diag)
-    L = D - W_sparse.toarray()  # Ma trận dày đặc để đồng bộ với phiên bản không song song
+    L = D - W_sparse  # Nếu W_sparse là ndarray, không cần .toarray()
     return L, D
 
 # Tích vô hướng với Numba (logic giống phiên bản không song song)
