@@ -28,7 +28,7 @@ def kiemThuChayNhieuLanMain(solan):
     if (kichthuocthumuc == 0) :
         relative_path = "resized_image_files"
     if (kichthuocthumuc == 10) :
-        relative_path = "resized_image_files_copy"
+        relative_path = "images"
 
     # Chuyển đổi thành đường dẫn tuyệt đối
     absolute_path = os.path.abspath(relative_path)

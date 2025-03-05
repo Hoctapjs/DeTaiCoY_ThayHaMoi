@@ -5,11 +5,12 @@ import sys
 current_dir = os.path.dirname(os.path.abspath(__file__))
 
 # Thêm thư mục cần import vào sys.path
-sys.path.append(os.path.join(current_dir, "Lanczos/01_NORMAL"))
+# sys.path.append(os.path.join(current_dir, "Lanczos/01_NORMAL"))
 # sys.path.append(os.path.join(current_dir, "Lanczos/01_SONGSONG"))
+sys.path.append(os.path.join(current_dir, "Lanczos/01_SOSANHTRUCQUAN"))
 
 # NORMAL
-import had_coo_khong_library as codechuan 
+# import had_coo_khong_library as codechuan 
 # import had_coo as codechuan 
 # import none_coo as codechuan 
 
@@ -18,6 +19,8 @@ import had_coo_khong_library as codechuan
 # import had_coo_ss as codechuan 
 # import none_coo_ss as codechuan 
 
+# TRUC QUAN
+import cosongsong as codechuan 
 
 
 def kiemThuChayNhieuLanMain(solan):
@@ -30,7 +33,7 @@ def kiemThuChayNhieuLanMain(solan):
     if (kichthuocthumuc == 100) :
         relative_path = "image_data_100"
     if (kichthuocthumuc == 0) :
-        relative_path = "image2"
+        relative_path = "image"
 
     # Chuyển đổi thành đường dẫn tuyệt đối
     absolute_path = os.path.abspath(relative_path)
