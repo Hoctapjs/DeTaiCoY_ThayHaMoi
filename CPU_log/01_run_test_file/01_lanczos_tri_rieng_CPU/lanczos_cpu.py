@@ -164,7 +164,7 @@ def Lanczos(A, v, m):
         if beta < 1e-10:
             break
         V[j, :] = w / beta
-        w = A @ V[j, :]
+        w = A @ V[j, :] # nhân từ dòng i tới dòng j của ma trận A với một vector
         alpha = handle_dot(w, V[j, :])
         w = w - alpha * V[j, :] - beta * V[j-1, :]
         

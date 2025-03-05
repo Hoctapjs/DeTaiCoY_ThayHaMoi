@@ -55,7 +55,10 @@ def compute_weight_matrix(image, sigma_i=0.1, sigma_x=10):
     def compute_kernel_features(i):
         return rbf_kernel([features[i]], features, gamma=1/(2 * sigma_i**2))[0]
     
+    # start 
+    # coi cpu nhiêu lõi, mỗi lõi có 1 tiến trình, all source nguồn có chiếm lõi nào ko?, số tiến trình còn lại có thể chạy là bn?
     W_features = np.array(Parallel(n_jobs=-1)(delayed(compute_kernel_features)(i) for i in range(features.shape[0])))
+    # end
 
     # Tinh do tuong dong ve dac trung va khong gian
     W_coords = rbf_kernel(coords, gamma=1/(2 * sigma_x**2))

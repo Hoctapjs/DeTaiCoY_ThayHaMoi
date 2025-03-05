@@ -41,7 +41,7 @@ def kiemThuChayNhieuLan(i, name, folder_path):
         logging.basicConfig(filename=log_file, level=logging.INFO,
                             format='%(asctime)s - %(levelname)s - %(message)s')
 
-        print(f"📷 Đang xử lý ảnh {idx}: {image_path}")
+        print(f"📷 Đang xử lý ảnh {idx}: {image_path}") 
         
         # Gọi hàm xử lý ảnh
         normalized_cuts(i, file_name, image_path, save_image_name)
@@ -132,8 +132,8 @@ def Lanczos(A, v, m):
     
     # Sử dụng joblib để tính w  
     try:  
-        # w = Parallel(n_jobs=-1)(delayed(matrix_vector_product)(A, V[0, :]) for _ in range(1))[0]  # Nhân ma trận A với V[0, :]  
-        w = A @ V[0, :]
+        w = Parallel(n_jobs=-1)(delayed(matrix_vector_product)(A, V[0, :]) for _ in range(1))[0]  # Nhân ma trận A với V[0, :]  
+        # w = A @ V[0, :]
     except Exception as e:  
         logging.error(f"Error in matrix-vector product: {e}")  
         raise  

@@ -90,7 +90,7 @@ def compute_weight_matrix(image, sigma_i=0.1, sigma_x=10, n_jobs=-1):
     # Song song hóa tính toán ma trận đặc trưng màu (W_features)
     def compute_rbf_chunk(start, end):
         return rbf_kernel(features[start:end], features, gamma=1/(2 * sigma_i**2))
-
+    
     n_samples = features.shape[0] # lấy tổng số pixel (số điểm ảnh cần xử lý)
     n_chunks = 8  # Chia thành 8 phần để chạy song song
     chunk_size = (n_samples + n_chunks - 1) // n_chunks  # Kích thước mỗi phần, // là phép chia lấy nguyên

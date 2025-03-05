@@ -114,7 +114,7 @@ def Lanczos(A, v, m):
     # 2. cập nhật vector a lại 
     #   a = a - alpha * b (b ở đây là V[0, :] = v / căn(v) )
 
-
+    # song song 118, 119
     w = A @ V[0, :] # tính vector w bằng cách nhân A với vector đầu tiên của V - hiểu nôm na là w sẽ cho ta biết các mà ma trận A tương tác với vector khởi tạo v
     alpha = np.dot(w, V[0, :]) # .dot là tính tích vô hướng của 2 vector a và b (trong case này là w và vector đầu tiên của V), hệ số alpha là để đo mức độ song song giữa w và V0
     w = w - alpha * V[0, :]
@@ -157,9 +157,11 @@ def compute_eigen(L, D, k=2):
     # Khởi tạo vector ngẫu nhiên
     v0 = np.random.rand(L.shape[0])
     v0 /= np.linalg.norm(v0)
-    
+
+    # start
     # Áp dụng thuật toán Lanczos
     T, V = Lanczos(L_normalized, v0, m=k+5)  # Sử dụng m > k để tăng độ chính xác
+    # end
     
     # Tính trị riêng và vector riêng của ma trận tam giác T
     eigvals, eigvecs_T = np.linalg.eig(T[:k, :k])

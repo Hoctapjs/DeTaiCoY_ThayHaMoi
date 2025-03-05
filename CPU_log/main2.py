@@ -30,7 +30,7 @@ def kiemThuChayNhieuLanMain(solan):
     # relative_path = "image_data_60"
 
     # Chuyển đổi thành đường dẫn tuyệt đối
-    absolute_path = os.path.abspath(relative_path)
+    absolute_path = os.path.abspath(relative_path)  
     folder_path = absolute_path
 
     for i in range(solan):

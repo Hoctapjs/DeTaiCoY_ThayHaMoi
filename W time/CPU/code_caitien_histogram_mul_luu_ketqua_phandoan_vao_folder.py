@@ -116,5 +116,5 @@ def normalized_cuts(lan, imagename, image_path, output_path):
     save_segmentation(image, labels, k, output_path)
     end_cpu = time.time()
     logging.info(f"Thoi gian: {end_cpu - start_cpu} giay")
-    logging.info(f"Thoi gian COO: {end_cpu_coo - start_cpu_coo} giay")
+    logging.info(f"Thoi gian ma tran W: {end_cpu_coo - start_cpu_coo} giay")
     return labels, k

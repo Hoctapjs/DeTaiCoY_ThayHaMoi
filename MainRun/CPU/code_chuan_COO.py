@@ -9,6 +9,7 @@ from tkinter import Tk
 from tkinter.filedialog import askopenfilename
 import logging
 from scipy.sparse import coo_matrix #chuyển sang ma trận coo
+from joblib import Parallel, delayed
 
 
 def kiemThuChayNhieuLan(i, name):

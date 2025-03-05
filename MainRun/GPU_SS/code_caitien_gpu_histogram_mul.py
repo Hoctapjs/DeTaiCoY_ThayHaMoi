@@ -222,11 +222,11 @@ def compute_weight_matrix(image, sigma_i=0.1, sigma_x=10):
     stream2 = cp.cuda.Stream(non_blocking=True)
 
     # Tính toán W_features và W_coords song song
-    with stream1:
+    with stream1: # song song 
         W_features = rbf_kernel(cp.asnumpy(features), gamma=1/(2 * sigma_i**2))
         W_features = cp.asarray(W_features)
 
-    with stream2:
+    with stream2: 
         W_coords = rbf_kernel(cp.asnumpy(coords), gamma=1/(2 * sigma_x**2))
         W_coords = cp.asarray(W_coords)
 

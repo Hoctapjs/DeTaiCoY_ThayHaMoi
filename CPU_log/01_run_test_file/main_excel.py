@@ -7,6 +7,7 @@ current_dir = os.path.dirname(os.path.abspath(__file__))
 # Thêm thư mục cần import vào sys.path
 # sys.path.append(os.path.join(current_dir, "01_lanczos_tri_rieng_CPU"))
 # sys.path.append(os.path.join(current_dir, "02_lanczos_tri_rieng_CPU_COO"))
+
 sys.path.append(os.path.join(current_dir, "03_lanczos_tri_rieng_CPU_SS"))
 # sys.path.append(os.path.join(current_dir, "04_lanczos_tri_rieng_CPU_COO_SS"))
 
@@ -14,6 +15,17 @@ sys.path.append(os.path.join(current_dir, "03_lanczos_tri_rieng_CPU_SS"))
 # # import lanczos_cpu_coo as codechuan 
 # import lanczos_cpu_ss_coo as codechuan 
 import lanczos_cpu_ss as codechuan 
+# sys.path.append(os.path.join(current_dir, "03_lanczos_tri_rieng_CPU_SS"))
+# sys.path.append(os.path.join(current_dir, "04_lanczos_tri_rieng_CPU_COO_SS"))
+sys.path.append(os.path.join(current_dir, "05_lanczos_SS_COO"))
+
+# import lanczos_cpu as codechuan 
+# import lanczos_cpu_coo as codechuan 
+# import lanczos_cpu_ss_coo as codechuan 
+# import lanczos_cpu as codechuan 
+# import lanczos_cpu_ss as codechuan 
+# import lanczos_cpu_ss_coo as codechuan 
+# import lanczos_ss_coo as codechuan 
 
 
 def kiemThuChayNhieuLanMain(solan):

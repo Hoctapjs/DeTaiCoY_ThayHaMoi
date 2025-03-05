@@ -123,6 +123,8 @@ def matrix_vector_product(A, v):
 
 # Các phép toán A @ v và np.dot(v1, v2) vốn đã nhanh nếu NumPy sử dụng BLAS/MKL đa luồng. Nếu bạn muốn tận dụng đa lõi CPU, chỉ cần bật hỗ trợ OpenBLAS/MKL:
 os.environ["OMP_NUM_THREADS"] = "2"  # Điều chỉnh số luồng tùy theo CPU 
+# Các phép toán A @ v và np.dot(v1, v2) vốn đã nhanh nếu NumPy sử dụng BLAS/MKL đa luồng. Nếu muốn tận dụng đa lõi CPU, chỉ cần bật hỗ trợ OpenBLAS/MKL:
+os.environ["OMP_NUM_THREADS"] = "6"  # Điều chỉnh số luồng tùy theo CPU 
 # os.environ["OMP_NUM_THREADS"] = str(os.cpu_count())  # Lấy toàn bộ số luồng CPU khả dụng
 
 # from numba import njit, prange đoạn này import ở trên
@@ -163,7 +165,7 @@ def Lanczos(A, v, m): # version mới
     for j in prange(1, m):  
         beta = np.linalg.norm(v)
         if beta < 1e-10:
-            continue  # ❌ Có thể gây lỗi, nên thay bằng return hoặc continue
+            continue  # Có thể gây lỗi, nên thay bằng return hoặc continue
         
         V[j, :] = v / beta
         v = A @ V[j, :]
