@@ -20,7 +20,10 @@ sys.path.append(os.path.join(current_dir, "Lanczos/01_SOSANHTRUCQUAN"))
 # import none_coo_ss as codechuan 
 
 # TRUC QUAN
-import cosongsong as codechuan 
+# import cosongsong as codechuan 
+# import khongsongsong as codechuan 
+# import cosongsong_none_coo as codechuan 
+# import cosongsong_none_coo as codechuan 
 
 
 def kiemThuChayNhieuLanMain(solan):
