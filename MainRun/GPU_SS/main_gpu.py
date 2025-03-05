@@ -3,7 +3,7 @@ import ncut_GPU_lanczos_mul_coo as codechuan  # Import file chứa các hàm c�
 import os
 
 # Đường dẫn tương đối đến một tệp
-relative_path = "GPU_SS\image_W2"
+relative_path = "GPU_SS\image_2"
 
 # Chuyển đổi thành đường dẫn tuyệt đối
 absolute_path = os.path.abspath(relative_path)

@@ -119,43 +119,44 @@ def compute_laplacian(W):
 
 # 3. Giai bai toan tri rieng
 
+def matvec_mult(A, v):
+    """
+    Hàm nhân ma trận A với vector v.
+    : A: Ma trận (numpy 2D array).
+    : v: Vector (numpy 1D array).
+    : return: Vector kết quả sau phép nhân.
+    """
+    n = A.shape[0]
+    result = cp.zeros(n)
+    for i in range(n):
+        result[i] = cp.dot(A[i, :], v)  # Nhân từng hàng của A với v
+    return result
+
 def Lanczos(A, v, m):
     """
     Thuật toán Lanczos để xấp xỉ trị riêng và vector riêng.
     : A: Ma trận cần tính (numpy 2D array).
     : v: Vector khởi tạo.
     : m: Số bước lặp Lanczos.
-    :return: Ma trận tam giác T và ma trận trực giao V.
+    : return: Ma trận tam giác T và ma trận trực giao V.
     """
-    n = len(v) # Đây là số phần tử trong vector v (số chiều của ma trận A)
-    V = cp.zeros((m, n)) # đây là một ma trận mxn lưu trữ các vector trực giao (là 2 vector có tích vô hướng = 0), mỗi hàng là một bước đã đi qua, np.zeros nghĩa là ban đầu tất cả các bước đi (hay các phần tử của ma trận) đều là 0, chưa đi bước nào
-    T = cp.zeros((m, m)) # đây là ma trận tam giác T
-    V[0, :] = v / cp.linalg.norm(v) # np.linalg.norm(v) là để tính chuẩn (độ dài) của vector = căn(v1^2 + v2^2 + ...)
-    # => V[0, :] = v / np.linalg.norm(v) là để chuẩn hóa vector v đầu vào thành vector đơn vị 
-    
-    # Đoạn này là để làm cho w trực giao với V0 thôi
-    # vd: để làm cho 2 vector a và b trực giao với nhau
-    # 1. tính tích vô hướng của a và b (alpha)
-    # 2. cập nhật vector a lại 
-    #   a = a - alpha * b (b ở đây là V[0, :] = v / căn(v) )
+    n = len(v)
+    V = cp.zeros((m, n))
+    T = cp.zeros((m, m))
+    V[0, :] = v / cp.linalg.norm(v)
 
-
-    w = A @ V[0, :] # tính vector w bằng cách nhân A với vector đầu tiên của V - hiểu nôm na là w sẽ cho ta biết các mà ma trận A tương tác với vector khởi tạo v
-    alpha = cp.dot(w, V[0, :]) # .dot là tính tích vô hướng của 2 vector a và b (trong case này là w và vector đầu tiên của V), hệ số alpha là để đo mức độ song song giữa w và V0
+    w = matvec_mult(A, V[0, :])
+    alpha = cp.dot(w, V[0, :])
     w = w - alpha * V[0, :]
-    # alpha * V[0, :] tạo ra một vector có hướng song song với 
-    # V[0,:] mà có độ dài tương ứng.
-    # sau khi trừ xong thì nò sẽ loại bỏ phần song song ra khỏi w
-
     
-    T[0, 0] = alpha # Gán giá trị alpha vào phần tử đầu tiên của T
+    T[0, 0] = alpha
     
     for j in range(1, m):
         beta = cp.linalg.norm(w)
         if beta < 1e-10:
             break
         V[j, :] = w / beta
-        w = A @ V[j, :]
+        w = matvec_mult(A, V[j, :])
         alpha = cp.dot(w, V[j, :])
         w = w - alpha * V[j, :] - beta * V[j-1, :]
         
@@ -164,7 +165,6 @@ def Lanczos(A, v, m):
         T[j, j-1] = beta
     
     return T, V
-
 def compute_eigen(L, D, k=2):
     """
     Giải bài toán trị riêng bằng thuật toán Lanczos không dùng eigsh.

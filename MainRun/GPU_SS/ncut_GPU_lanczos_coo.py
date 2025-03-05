@@ -137,92 +137,52 @@ def compute_laplacian(W_sparse):
 
 # 3. Giai bai toan tri rieng
 
-# Kernel CUDA để nhân ma trận với vector
-matvec_kernel = cp.RawKernel(r'''
-extern "C" __global__
-void matvec_mul(const double* A, const double* V, double* W, int N) {
-    int row = blockIdx.x * blockDim.x + threadIdx.x;
-    if (row < N) {
-        double sum = 0.0;
-        for (int col = 0; col < N; col++) {
-            sum += A[row * N + col] * V[col];
-        }
-        W[row] = sum;
-    }
-}
-''', 'matvec_mul')
-
-# Kernel CUDA để tính tích vô hướng song song
-dot_kernel = cp.RawKernel(r'''
-extern "C" __global__
-void dot_product(const double* A, const double* B, double* result, int N) {
-    __shared__ double cache[1024];  
-    int tid = threadIdx.x + blockIdx.x * blockDim.x;
-    int cacheIndex = threadIdx.x;
-    
-    double temp = 0.0;
-    while (tid < N) {
-        temp += A[tid] * B[tid];
-        tid += blockDim.x * gridDim.x;
-    }
-    
-    cache[cacheIndex] = temp;
-    __syncthreads();
-
-    // Reduction trong shared memory
-    for (int s = blockDim.x / 2; s > 0; s >>= 1) {
-        if (cacheIndex < s) {
-            cache[cacheIndex] += cache[cacheIndex + s];
-        }
-        __syncthreads();
-    }
-    
-    if (cacheIndex == 0) {
-        atomicAdd(result, cache[0]);
-    }
-}
-''', 'dot_product')
-
+def matvec_mult(A, v):
+    """
+    Hàm nhân ma trận A với vector v.
+    : A: Ma trận (numpy 2D array).
+    : v: Vector (numpy 1D array).
+    : return: Vector kết quả sau phép nhân.
+    """
+    n = A.shape[0]
+    result = cp.zeros(n)
+    for i in range(n):
+        result[i] = cp.dot(A[i, :], v)  # Nhân từng hàng của A với v
+    return result
 
 def Lanczos(A, v, m):
+    """
+    Thuật toán Lanczos để xấp xỉ trị riêng và vector riêng.
+    : A: Ma trận cần tính (numpy 2D array).
+    : v: Vector khởi tạo.
+    : m: Số bước lặp Lanczos.
+    : return: Ma trận tam giác T và ma trận trực giao V.
+    """
     n = len(v)
-    V = cp.zeros((m, n), dtype=cp.float64)
-    T = cp.zeros((m, m), dtype=cp.float64)
+    V = cp.zeros((m, n))
+    T = cp.zeros((m, m))
     V[0, :] = v / cp.linalg.norm(v)
 
-    W = cp.zeros(n, dtype=cp.float64)  # Vector tạm thời
-    alpha_gpu = cp.zeros(1, dtype=cp.float64)  # Giá trị alpha trên GPU
-
-    for j in range(m-1):
-        # Nhân ma trận A với vector V[j, :] song song trên CUDA
-        matvec_kernel((n // 256 + 1,), (256,), (A, V[j, :], W, n))
-
-        # Tính alpha = dot(W, V[j, :]) song song trên CUDA
-        alpha_gpu.fill(0)
-        dot_kernel((n // 256 + 1,), (256,), (W, V[j, :], alpha_gpu, n))
-        alpha = alpha_gpu  # Giữ trên GPU
-
-        W -= alpha * V[j, :]
-
-        if j > 0:
-            W -= beta * V[j - 1, :]
-
-        beta = cp.linalg.norm(W)
+    w = matvec_mult(A, V[0, :])
+    alpha = cp.dot(w, V[0, :])
+    w = w - alpha * V[0, :]
+    
+    T[0, 0] = alpha
+    
+    for j in range(1, m):
+        beta = cp.linalg.norm(w)
         if beta < 1e-10:
             break
-
-        if j + 1 < V.shape[0]:
-            V[j + 1, :] = W / beta
-        else:
-            print(f"Lỗi: j + 1 ({j + 1}) vượt quá giới hạn {V.shape[0]}")
-
+        V[j, :] = w / beta
+        w = matvec_mult(A, V[j, :])
+        alpha = cp.dot(w, V[j, :])
+        w = w - alpha * V[j, :] - beta * V[j-1, :]
+        
         T[j, j] = alpha
-        if j < m - 1:
-            T[j, j + 1] = beta
-            T[j + 1, j] = beta
-
+        T[j-1, j] = beta
+        T[j, j-1] = beta
+    
     return T, V
-
 def compute_eigen(L, D, k=2):
     """
     Giải bài toán trị riêng bằng thuật toán Lanczos không dùng eigsh.
