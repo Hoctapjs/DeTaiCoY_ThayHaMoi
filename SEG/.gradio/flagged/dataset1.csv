@@ -1,3 +1,9 @@
+<<<<<<< HEAD
 Upload SEG File 1,Upload SEG File 2,output 0,output 1,output 2,timestamp
 .gradio\flagged\Upload SEG File 1\7bef65743cf0a0600ff0\60_segmentation_0.seg,.gradio\flagged\Upload SEG File 2\504fa381aa990c65da57\60_segmentation_0.seg,.gradio\flagged\output 0\34ebabce62a59388625a\output_60_segmentation_0.seg.png,.gradio\flagged\output 1\19facc5cd2f7b90f1068\output_mapped.png,Dice Similarity Coefficient: 100.00%,2025-03-15 14:01:21.169036
 .gradio\flagged\Upload SEG File 1\16830e7df2b915517a86\60_segmentation_0.seg,.gradio\flagged\Upload SEG File 2\48f1456a464be7411bab\60_segmentation_0.seg,.gradio\flagged\output 0\b7c63ac1a06c49ee595e\output_60_segmentation_0.seg.png,.gradio\flagged\output 1\a89819c3993e510440e8\output_mapped.png,Dice Similarity Coefficient: 100.00%,2025-03-15 14:01:23.413239
+=======
+Upload SEG File,output,timestamp
+.gradio\flagged\Upload SEG File\36d758c90bfe1d8dbec8\resized_image_50x50_segmentation_9.seg,.gradio\flagged\output\d923ee7df11ba28e8fa9\output.png,2025-03-15 14:46:25.691290
+.gradio\flagged\Upload SEG File\6b72d948495e555caa51\resized_image_50x50_segmentation_9.seg,.gradio\flagged\output\94170bde834e2ca7c616\output.png,2025-03-15 14:46:27.486127
+>>>>>>> e7d6f8746ea5e313636ca1801eceaabc68d8b3c3

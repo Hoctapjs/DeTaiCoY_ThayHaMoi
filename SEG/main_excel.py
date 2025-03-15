@@ -18,10 +18,14 @@ sys.path.append(os.path.join(current_dir, "SEG_01_W_CPU"))
 # import lanczos_cpu as codechuan 
 # import lanczos_cpu_coo as codechuan 
 # import app_new as codechuan 
+<<<<<<< HEAD
 # import lanczos as codechuan 
 import w_cpu as codechuan 
 # import w_gpu as codechuan 
 # import w_gpu_ss as codechuan 
+=======
+import lanczosnam as codechuan 
+>>>>>>> e7d6f8746ea5e313636ca1801eceaabc68d8b3c3
 # import lanczos_cpu_ss_coo as codechuan 
 
 
