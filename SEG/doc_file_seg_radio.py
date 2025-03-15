@@ -1,6 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import gradio as gr
+import os
 
 def load_segmentation_file(file_path):
     with open(file_path, 'r') as file:
@@ -42,19 +43,29 @@ def display_segmented_image(file_obj):
     plt.title('Restored Segmented Image')
     plt.colorbar()
     
-    img_path = "output.png"
+    filename = os.path.basename(file_obj.name)  # Lấy tên file, bỏ đường dẫn
+    img_path = f"output_{filename}.png"
     plt.savefig(img_path)
     plt.close()
     
     return img_path
 
+title = "Dual SEG File Viewer"
+description = "Upload two .seg files to visualize the segmented images separately."
+
+def display_two_segmented_images(file1, file2):
+    img1 = display_segmented_image(file1) if file1 else None
+    img2 = display_segmented_image(file2) if file2 else None
+    return img1, img2
+
 iface = gr.Interface(
-    fn=display_segmented_image,
-    inputs=gr.File(label="Upload SEG File"),
-    outputs=gr.Image(type="filepath"),
-    title="SEG File Viewer",
-    description="Upload a .seg file to visualize the segmented image."
+    fn=display_two_segmented_images,  # Sử dụng hàm duy nhất
+    inputs=[gr.File(label="Upload SEG File 1"), gr.File(label="Upload SEG File 2")],
+    outputs=[gr.Image(type="filepath"), gr.Image(type="filepath")],
+    title=title,
+    description=description
 )
+
 
 if __name__ == "__main__":
     iface.launch()

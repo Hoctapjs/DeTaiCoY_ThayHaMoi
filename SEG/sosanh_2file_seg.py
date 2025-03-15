@@ -56,7 +56,7 @@ def main():
         print("Giống hoàn toàn")
         
     if iou < 1:
-        print(f"Giống tương đối : {iou:.4f}")
+        print(f"Giống tương đối : {iou*100:.4f}%")
 
     if iou == 0:
         print("Khác hoàn toàn")

@@ -7,9 +7,11 @@ current_dir = os.path.dirname(os.path.abspath(__file__))
 # Thêm thư mục cần import vào sys.path
 # sys.path.append(os.path.join(current_dir, "01_W_CPU"))
 # sys.path.append(os.path.join(current_dir, "02_W_CPU_SS"))
-sys.path.append(os.path.join(current_dir, "SEG_01_W_CPU"))
 # sys.path.append(os.path.join(current_dir, "03_W_GPU"))
 # sys.path.append(os.path.join(current_dir, "04_W_GPU_SS"))
+
+# sys.path.append(os.path.join(current_dir, "SEG_01_W_CPU"))
+sys.path.append(os.path.join(current_dir, "SEG_02_W_CPU_SS"))
 
 # import lanczos_cpu as codechuan 
 # import lanczos_cpu_coo as codechuan 
