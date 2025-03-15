@@ -165,7 +165,7 @@ def normalized_cuts(lan, imagename, image_path):
     labels = assign_labels(vecs, k)
 
     # Lưu kết quả dưới dạng file SEG
-    seg_output_path = os.path.splitext(image_path)[0] + ".seg"
+    seg_output_path = f"{imagename}_segmentation.seg"
     save_seg_file(labels.reshape(image.shape[:2]), image.shape, seg_output_path, imagename)
     
     end_cpu = time.time()

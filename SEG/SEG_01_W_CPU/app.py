@@ -94,85 +94,121 @@ def compute_weight_matrix(image, sigma_i=0.1, sigma_x=10):
 
 
 
-# 2. Tinh ma tran Laplace
-def compute_laplacian(W_sparse):
-    # Tạo ma trận đường chéo từ tổng các hàng
-    D_diag = W_sparse.sum(axis=1).A.flatten() if hasattr(W_sparse, 'toarray') else W_sparse.sum(axis=1)
-    D = np.diag(D_diag)  # Ma trận đường chéo
-    L = D - W_sparse.toarray() if hasattr(W_sparse, 'toarray') else D -W_sparse  # Đảm bảo W là dạng mảng NumPy
-
+def compute_laplacian(W):
+    D = np.diag(W.sum(axis=1))
+    L = D - W
     return L, D
 
-
-# 3. Giai bai toan tri rieng
-def handle_dot(a, b):
-    """Tính tích vô hướng của hai vector song song hóa"""
-    return np.sum(a * b)  # NumPy đã tối ưu hóa, nhưng có thể dùng joblib nếu cần
-
-def matrix_vector_product(A, v):  
-    """Hàm nhân ma trận với vector"""  
-    return A @ v  
-
-def Lanczos(A, v, m):
-    n = len(v)
-    V = np.zeros((m, n))
-    T = np.zeros((m, m))
-    V[0, :] = v / np.linalg.norm(v)
-    
-    w = matrix_vector_product(A, V[0, :])
-    alpha = handle_dot(w, V[0, :])  # Tích vô hướng song song
-    
-    w = w - alpha * V[0, :]
-    T[0, 0] = alpha
-    
-    for j in range(1, m):
-        beta = np.linalg.norm(w)
-        if beta < 1e-10:
-            break
-        V[j, :] = w / beta
-        w = A @ V[j, :]
-        alpha = handle_dot(w, V[j, :])
-        w = w - alpha * V[j, :] - beta * V[j-1, :]
-        
-        T[j, j] = alpha
-        T[j-1, j] = beta
-        T[j, j-1] = beta
-    
-    return T, V
+from scipy.sparse import diags, issparse
+import numpy as np
+import time
+from scipy.sparse.linalg import eigsh
 
 def compute_eigen(L, D, k=2):
-    """
-    Giải bài toán trị riêng bằng thuật toán Lanczos không dùng eigsh.
-    :param L: Ma trận Laplace thưa (Scipy sparse matrix).
-    :param D: Ma trận đường chéo (Scipy sparse matrix).
-    :param k: Số trị riêng nhỏ nhất cần tính.
-    :return: Các vector riêng tương ứng (k vector).
-    """
-    # Chuan hoa ma tran Laplace: D^-1/2 * L * D^-1/2
-    D_diag = D.diagonal().copy()  # Lay duong cheo cua D
-    D_diag[D_diag < 1e-10] = 1e-10  # Tranh chia cho 0 hoac gan 0
-    D_inv_sqrt = diags(1.0 / np.sqrt(D_diag))  # Tinh D^-1/2
-    L_normalized = D_inv_sqrt @ L @ D_inv_sqrt  # Chuan hoa ma tran Laplace
-    
-    # Khởi tạo vector ngẫu nhiên
-    v0 = np.random.rand(L.shape[0])
-    v0 /= np.linalg.norm(v0)
+    if issparse(D):
+        D = D.todense()  # Chuyển sang dạng dense nếu là sparse
 
-    # Áp dụng thuật toán Lanczos
-    lanczos_time_start = time.time()
-    T, V = Lanczos(L_normalized, v0, m=k+5)  # Sử dụng m > k để tăng độ chính xác
-    lanczos_time_end = time.time()
+    D_diag = np.array(D.diagonal()).copy()  # Bản sao có thể chỉnh sửa
+    D_diag[D_diag < 1e-10] = 1e-10  # Tránh giá trị quá nhỏ gây lỗi
 
-    # Thời gian Lanczos
-    lanczos_time = lanczos_time_end - lanczos_time_start
-    
-    # Tính trị riêng và vector riêng của ma trận tam giác T
-    eigvals, eigvecs_T = np.linalg.eig(T[:k, :k])
-    
-    # Chuyển đổi vector riêng về không gian gốc
-    eigvecs_original = D_inv_sqrt @ (V[:k, :].T @ eigvecs_T)
-    
+    if issparse(D):
+        D.setdiag(D_diag)  # Cập nhật đường chéo nếu là sparse matrix
+    else:
+        np.fill_diagonal(D, D_diag)  # Nếu là numpy array, dùng fill_diagonal()
+
+    D_inv_sqrt = diags(1.0 / np.sqrt(D_diag))  # Tạo ma trận nghịch đảo căn
+    L_normalized = D_inv_sqrt @ L @ D_inv_sqrt  # Chuẩn hóa Laplacian
+
+    start_time = time.time()
+    eigvals, eigvecs = eigsh(L_normalized, k, which='SM')  # Tính eigen
+    end_time = time.time()
+
+    lanczos_time = end_time - start_time
+    eigvecs_original = D_inv_sqrt @ eigvecs  # Khôi phục eigen vectors gốc
+
     return eigvecs_original, lanczos_time
+
+# tạm thời khóa để test độ chính xác
+
+# # 2. Tinh ma tran Laplace
+# def compute_laplacian(W_sparse):
+#     # Tạo ma trận đường chéo từ tổng các hàng
+#     D_diag = W_sparse.sum(axis=1).A.flatten() if hasattr(W_sparse, 'toarray') else W_sparse.sum(axis=1)
+#     D = np.diag(D_diag)  # Ma trận đường chéo
+#     L = D - W_sparse.toarray() if hasattr(W_sparse, 'toarray') else D -W_sparse  # Đảm bảo W là dạng mảng NumPy
+
+#     return L, D
+
+
+# # 3. Giai bai toan tri rieng
+# def handle_dot(a, b):
+#     """Tính tích vô hướng của hai vector song song hóa"""
+#     return np.sum(a * b)  # NumPy đã tối ưu hóa, nhưng có thể dùng joblib nếu cần
+
+# def matrix_vector_product(A, v):  
+#     """Hàm nhân ma trận với vector"""  
+#     return A @ v  
+
+# def Lanczos(A, v, m):
+#     n = len(v)
+#     V = np.zeros((m, n))
+#     T = np.zeros((m, m))
+#     V[0, :] = v / np.linalg.norm(v)
+    
+#     w = matrix_vector_product(A, V[0, :])
+#     alpha = handle_dot(w, V[0, :])  # Tích vô hướng song song
+    
+#     w = w - alpha * V[0, :]
+#     T[0, 0] = alpha
+    
+#     for j in range(1, m):
+#         beta = np.linalg.norm(w)
+#         if beta < 1e-10:
+#             break
+#         V[j, :] = w / beta
+#         w = A @ V[j, :]
+#         alpha = handle_dot(w, V[j, :])
+#         w = w - alpha * V[j, :] - beta * V[j-1, :]
+        
+#         T[j, j] = alpha
+#         T[j-1, j] = beta
+#         T[j, j-1] = beta
+    
+#     return T, V
+
+# def compute_eigen(L, D, k=2):
+#     """
+#     Giải bài toán trị riêng bằng thuật toán Lanczos không dùng eigsh.
+#     :param L: Ma trận Laplace thưa (Scipy sparse matrix).
+#     :param D: Ma trận đường chéo (Scipy sparse matrix).
+#     :param k: Số trị riêng nhỏ nhất cần tính.
+#     :return: Các vector riêng tương ứng (k vector).
+#     """
+#     # Chuan hoa ma tran Laplace: D^-1/2 * L * D^-1/2
+#     D_diag = D.diagonal().copy()  # Lay duong cheo cua D
+#     D_diag[D_diag < 1e-10] = 1e-10  # Tranh chia cho 0 hoac gan 0
+#     D_inv_sqrt = diags(1.0 / np.sqrt(D_diag))  # Tinh D^-1/2
+#     L_normalized = D_inv_sqrt @ L @ D_inv_sqrt  # Chuan hoa ma tran Laplace
+    
+#     # Khởi tạo vector ngẫu nhiên
+#     v0 = np.random.rand(L.shape[0])
+#     v0 /= np.linalg.norm(v0)
+
+#     # Áp dụng thuật toán Lanczos
+#     lanczos_time_start = time.time()
+#     T, V = Lanczos(L_normalized, v0, m=k+5)  # Sử dụng m > k để tăng độ chính xác
+#     lanczos_time_end = time.time()
+
+#     # Thời gian Lanczos
+#     lanczos_time = lanczos_time_end - lanczos_time_start
+    
+#     # Tính trị riêng và vector riêng của ma trận tam giác T
+#     eigvals, eigvecs_T = np.linalg.eig(T[:k, :k])
+    
+#     # Chuyển đổi vector riêng về không gian gốc
+#     eigvecs_original = D_inv_sqrt @ (V[:k, :].T @ eigvecs_T)
+    
+#     return eigvecs_original, lanczos_time
 
 # 4. Gan nhan cho tung diem anh dua tren vector rieng
 def assign_labels(eigen_vectors, k):
@@ -206,7 +242,8 @@ def save_seg_file(labels, image_shape, output_path, image_name="image"):
         f"segments {segments}",
         "gray 0",
         "invert 0",
-        "flipflop 0"
+        "flipflop 0",
+        "data"
     ]
     
     # Tạo dữ liệu pixel theo định dạng (nhãn, dòng, cột bắt đầu, cột kết thúc)
@@ -255,7 +292,7 @@ def normalized_cuts(lan, imagename, image_path, output_path):
     labels = assign_labels(vecs, k)
 
     # Lưu kết quả dưới dạng file SEG
-    seg_output_path = os.path.splitext(output_path)[0] + ".seg"
+    seg_output_path = f"{imagename}_segmentation.seg"
     save_seg_file(labels.reshape(image.shape[:2]), image.shape, seg_output_path, imagename)
 
     end_cpu = time.time()
