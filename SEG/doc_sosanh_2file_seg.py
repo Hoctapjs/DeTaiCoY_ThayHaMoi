@@ -8,8 +8,8 @@ def load_segmentation_file(file_path):
     with open(file_path, 'r') as file:
         lines = file.readlines()
     
-    width = int(lines[4].split()[1])  # width value
-    height = int(lines[5].split()[1])  # height value
+    width = int(lines[4].split()[1])
+    height = int(lines[5].split()[1])
     
     data_index = lines.index('data\n') + 1
     seg_data = lines[data_index:]
@@ -90,16 +90,27 @@ def compare_segmentations(file1, file2):
     
     return display_segmented_image(file1), img_path, f"Dice Similarity Coefficient: {dice_score:.2f}%"
 
+def display_third_segment(file3):
+    if not file3:
+        return None
+    return display_segmented_image(file3)
+
 title = "Dual SEG File Viewer & Comparison"
-description = "Upload two .seg files to visualize and compare segmentation accuracy using the Dice coefficient."
+description = "Upload three .seg files: Two for comparison, one independent for visualization."
+
+def process_segmentation(file1, file2, file3):
+    result1, result2, dice_text = compare_segmentations(file1, file2)
+    result3 = display_segmented_image(file3) if file3 else None
+    return result1, result2, dice_text, result3
 
 iface = gr.Interface(
-    fn=compare_segmentations,
-    inputs=[gr.File(label="Upload SEG File 1"), gr.File(label="Upload SEG File 2")],
-    outputs=[gr.Image(type="filepath"), gr.Image(type="filepath"), gr.Text()],
+    fn=process_segmentation,
+    inputs=[gr.File(label="Upload SEG File 1"), gr.File(label="Upload SEG File 2"), gr.File(label="Upload SEG File 3")],
+    outputs=[gr.Image(type="filepath"), gr.Image(type="filepath"), gr.Text(), gr.Image(type="filepath")],
     title=title,
     description=description
 )
+
 
 if __name__ == "__main__":
     iface.launch()

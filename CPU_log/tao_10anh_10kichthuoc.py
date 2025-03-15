@@ -16,7 +16,7 @@ def resize_images():
     img = Image.open(file_path)
     
     # Tạo và lưu 10 ảnh với kích thước tăng dần
-    for i in range(10):
+    for i in range(20):
         size = 50 + i * 5  # Kích thước ảnh
         resized_img = img.resize((size, size))
         save_path = f"resized_image_{size}x{size}.png"
