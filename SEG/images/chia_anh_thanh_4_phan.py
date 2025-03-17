@@ -24,14 +24,12 @@ except Exception as e:
     print(f"Lỗi khi mở ảnh: {e}")
     exit()
 
-# Kiểm tra kích thước ảnh
-if img.size != (481, 321):
-    print("Ảnh không có kích thước 481x321!")
-    exit()
+# Lấy kích thước ảnh gốc
+img_width, img_height = img.size
 
-# Định nghĩa kích thước từng phần
-part_width = 241  # Một nửa chiều rộng (chẵn lẻ do trừ dư)
-part_height = 161  # Một nửa chiều cao
+# Định nghĩa kích thước từng phần (chia 2)
+part_width = img_width // 2
+part_height = img_height // 2
 
 # Lấy tên file gốc (không có phần mở rộng)
 base_name, ext = os.path.splitext(os.path.basename(image_path))
@@ -39,9 +37,9 @@ base_name, ext = os.path.splitext(os.path.basename(image_path))
 # Chia ảnh thành 4 phần
 parts = [
     (0, 0, part_width, part_height),  # Góc trên trái
-    (part_width, 0, 481, part_height),  # Góc trên phải
-    (0, part_height, part_width, 321),  # Góc dưới trái
-    (part_width, part_height, 481, 321)  # Góc dưới phải
+    (part_width, 0, img_width, part_height),  # Góc trên phải
+    (0, part_height, part_width, img_height),  # Góc dưới trái
+    (part_width, part_height, img_width, img_height)  # Góc dưới phải
 ]
 
 # Chọn thư mục để lưu ảnh
