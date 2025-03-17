@@ -188,6 +188,19 @@ def compute_eigen(L, D, k=2):
 def assign_labels(eigen_vectors, k):
     return KMeans(n_clusters=k, random_state=42, n_init=50).fit(eigen_vectors).labels_  # Tăng n_init
 
+# Hàm tách ảnh thành 4 phần
+def split_image(image):
+    h, w, c = image.shape
+    h_half, w_half = h // 2, w // 2
+    parts = [
+        image[0:h_half, 0:w_half, :],        # Top-left (0-24, 0-24)
+        image[0:h_half, w_half:w, :],        # Top-right (0-24, 25-49)
+        image[h_half:h, 0:w_half, :],       # Bottom-left (25-49, 0-24)
+        image[h_half:h, w_half:w, :]        # Bottom-right (25-49, 25-49)
+    ]
+    return parts
+
+
 # Lưu file .seg
 def save_seg_file(labels, image_shape, output_path, image_name="image"):
     h, w = image_shape[:2]
@@ -227,28 +240,49 @@ def save_seg_file(labels, image_shape, output_path, image_name="image"):
         f.write("\n".join(data_lines) + "\n")
     print(f"✅ File SEG đã lưu: {output_path}")
 
-# Hàm chính xử lý ảnh
+# Hàm chính xử lý ảnh với tách thành 4 phần
 def normalized_cuts(lan, imagename, image_path, output_path):
     start_cpu = time.time()
     image = io.imread(image_path)
     image = color.gray2rgb(image) if image.ndim == 2 else image[:, :, :3] if image.shape[2] == 4 else image
     image = image / 255.0
-    k = 2
 
-    W, W_f, W_c = compute_weight_matrix(image, sigma_i=0.3, sigma_x=20.0)
-    W_all = W_f + W_c
-    L, D = compute_laplacian(W)
-    vecs, lanczos_time = compute_eigen(L, D, k)  # Lấy thêm lanczos_time
-    labels = assign_labels(vecs, k)
+    # Tách ảnh thành 4 phần
+    image_parts = split_image(image)
+    part_names = ["top_left", "top_right", "bottom_left", "bottom_right"]
+    total_time_parts = []
+    wf_times = []
+    wc_times = []
+    w_all_times = []
+    lanczos_times = []
 
-    seg_output_path = f"{imagename}_segmentation_{lan}.seg"
-    save_seg_file(labels, image.shape, seg_output_path, imagename)
+    for idx, (part, part_name) in enumerate(zip(image_parts, part_names)):
+        k = 2  # Số phân vùng
+
+        # Tính toán ma trận trọng số và phân đoạn cho từng phần
+        W, W_f, W_c = compute_weight_matrix(part, sigma_i=0.3, sigma_x=20.0)
+        W_all = W_f + W_c
+        L, D = compute_laplacian(W)
+        vecs, lanczos_time = compute_eigen(L, D, k)
+        labels = assign_labels(vecs, k)
+
+        # Lưu file .seg cho từng phần
+        seg_output_path = f"{imagename}_segmentation_{lan}_{part_name}.seg"
+        save_seg_file(labels, part.shape, seg_output_path, f"{imagename}_{part_name}")
+
+        # Ghi lại thời gian
+        end_part = time.time()
+        total_time_parts.append(end_part - start_cpu)
+        wf_times.append(W_f)
+        wc_times.append(W_c)
+        w_all_times.append(W_all)
+        lanczos_times.append(lanczos_time)
 
     end_cpu = time.time()
     total_cpu_time = end_cpu - start_cpu
-    return total_cpu_time, W_f, W_c, W_all, lanczos_time  # Thêm lanczos_time vào kết quả trả về
+    return total_cpu_time, wf_times, wc_times, w_all_times, lanczos_times
 
-# Hàm chạy nhiều ảnh và lưu kết quả - cập nhật để thêm cột thời gian Lanczos
+# Hàm chạy nhiều ảnh và lưu kết quả
 def kiemThuChayNhieuLan(i, name, folder_path, output_excel_base="results"):
     if not os.path.isdir(folder_path):
         print(f"❌ Thư mục {folder_path} không tồn tại!")
@@ -265,17 +299,19 @@ def kiemThuChayNhieuLan(i, name, folder_path, output_excel_base="results"):
         print(f"📷 Đang xử lý ảnh {idx}: {image_path}")
 
         imagename = os.path.splitext(file_name)[0]
-        total_time, wf_time, wc_time, W_all, lanczos_time = normalized_cuts(i, imagename, image_path, output_excel_base)
-        results.append([i, idx, file_name, wf_time, wc_time, W_all, lanczos_time])
+        total_time, wf_times, wc_times, w_all_times, lanczos_times = normalized_cuts(i, imagename, image_path, output_excel_base)
+
+        # Ghi kết quả cho từng phần
+        part_names = ["top_left", "top_right", "bottom_left", "bottom_right"]
+        for part_idx, part_name in enumerate(part_names):
+            results.append([
+                i, idx, f"{file_name}_{part_name}", 
+                wf_times[part_idx], wc_times[part_idx], w_all_times[part_idx], lanczos_times[part_idx]
+            ])
 
     df = pd.DataFrame(results, columns=[
-        "Lần chạy", 
-        "Ảnh số", 
-        "Tên ảnh", 
-        "Thời gian W đặc trưng (s)", 
-        "Thời gian W tọa độ (s)", 
-        "Thời gian W All", 
-        "Thời gian Lanczos (s)"  # Thêm cột mới
+        "Lần chạy", "Ảnh số", "Tên ảnh", 
+        "Thời gian W đặc trưng (s)", "Thời gian W tọa độ (s)", "Thời gian W All", "Thời gian Lanczos (s)"
     ])
     output_excel = f"{output_excel_base}_{name}_{i}.xlsx"
     df.to_excel(output_excel, index=False, engine='openpyxl')

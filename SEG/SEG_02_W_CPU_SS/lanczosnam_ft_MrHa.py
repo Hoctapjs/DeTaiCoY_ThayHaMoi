@@ -87,7 +87,9 @@ def handle_dot(a, b):
 @jit(nopython=True, parallel=True)
 def matrix_vector_product(A_data, A_indices, A_indptr, v, n, num_threads=os.cpu_count()):
     result = np.zeros(n)
-    chunk_size = n // num_threads
+    if n > 5000:  # Ngưỡng kích hoạt song song hóa
+        # num_threads = n.mod(5000) > num_threads ? num_threads : n.mod(5000) 
+        chunk_size = n // num_threads 
     for t in prange(num_threads):
         start = t * chunk_size
         end = (t + 1) * chunk_size if t < num_threads - 1 else n
@@ -110,8 +112,7 @@ def lanczos_sparse(A_data, A_indices, A_indptr, v, m, n, num_threads=os.cpu_coun
     
     # chunk_size = m // num_threads
     zero_vector = np.zeros(n, dtype=np.float64)  # Thêm zero vector cho nhánh else
-    for j in prange(1, m):  # Song song hóa vòng lặp ( j ), nhưng vì có break, hiệu quả song song bị hạn chế (Numba không tối ưu tốt với vòng lặp có thoát sớm)
-
+    for j in prange(1, m):  # Song song hóa vòng lặp j -- ở đây thì nó sẽ không song song được tối ưu vì có break ở trong (https://x.com/i/grok?conversation=1900765140427141218)
         beta = np.linalg.norm(w)
         if beta < 1e-10:
             break

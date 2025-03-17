@@ -211,7 +211,7 @@ def normalized_cuts(lan, imagename, image_path, output_path):
 
     end_cpu = time.time()
     total_cpu_time = end_cpu - start_cpu
-    return total_cpu_time, W_f, W_c, W_all
+    return total_cpu_time, W_f, W_c, W_all, lanczos_time  # Thêm lanczos_time vào kết quả trả về
 
 # Hàm chạy nhiều ảnh và lưu kết quả
 def kiemThuChayNhieuLan(i, name, folder_path, output_excel_base="results"):
@@ -230,10 +230,18 @@ def kiemThuChayNhieuLan(i, name, folder_path, output_excel_base="results"):
         print(f"📷 Đang xử lý ảnh {idx}: {image_path}")
 
         imagename = os.path.splitext(file_name)[0]
-        total_time, wf_time, wc_time, W_all = normalized_cuts(i, imagename, image_path, output_excel_base)
-        results.append([i, idx, file_name, wf_time, wc_time, W_all])
+        total_time, wf_time, wc_time, W_all, lanczos_time = normalized_cuts(i, imagename, image_path, output_excel_base)
+        results.append([i, idx, file_name, wf_time, wc_time, W_all, lanczos_time])
 
-    df = pd.DataFrame(results, columns=["Lần chạy", "Ảnh số", "Tên ảnh", "Thời gian W đặc trưng (s)", "Thời gian W tọa độ (s)", "Thời gian W All"])
+    df = pd.DataFrame(results, columns=[
+        "Lần chạy", 
+        "Ảnh số", 
+        "Tên ảnh", 
+        "Thời gian W đặc trưng (s)", 
+        "Thời gian W tọa độ (s)", 
+        "Thời gian W All", 
+        "Thời gian Lanczos (s)"  # Thêm cột mới
+    ])
     output_excel = f"{output_excel_base}_{name}_{i}.xlsx"
     df.to_excel(output_excel, index=False, engine='openpyxl')
     print(f"✅ Kết quả Excel đã lưu vào {output_excel}")
