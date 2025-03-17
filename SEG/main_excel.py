@@ -13,10 +13,18 @@ current_dir = os.path.dirname(os.path.abspath(__file__))
 # sys.path.append(os.path.join(current_dir, "SEG_01_W_CPU"))
 # sys.path.append(os.path.join(current_dir, "SEG_02_W_CPU_SS"))
 sys.path.append(os.path.join(current_dir, "SEG_NAM"))
+# sys.path.append(os.path.join(current_dir, "SEG_01_W_CPU"))
+# sys.path.append(os.path.join(current_dir, "SEG_02_W_CPU_SS"))
+# sys.path.append(os.path.join(current_dir, "SEG_03_W_GPU"))
+# sys.path.append(os.path.join(current_dir, "SEG_04_W_GPU_SS"))
 
 # import lanczos_cpu as codechuan 
 # import lanczos_cpu_coo as codechuan 
 # import app_new as codechuan 
+# import lanczos as codechuan 
+# import w_cpu as codechuan 
+# import w_gpu as codechuan 
+# import w_gpu_ss as codechuan 
 import lanczosnam as codechuan 
 # import lanczos_cpu_ss_coo as codechuan 
 
@@ -32,8 +40,12 @@ def kiemThuChayNhieuLanMain(solan):
         relative_path = "image_data_100"
     if (kichthuocthumuc == 0) :
         relative_path = "resized_image_files"
+    if (kichthuocthumuc == 2) :
+        relative_path = "resized_image_files_gpu"
     if (kichthuocthumuc == 1) :
         relative_path = "1 anh 50 test"
+    if (kichthuocthumuc == 12) :
+        relative_path = "namimg"
 
     # Chuyển đổi thành đường dẫn tuyệt đối
     absolute_path = os.path.abspath(relative_path)
